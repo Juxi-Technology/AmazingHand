@@ -1,5 +1,7 @@
 # AmazingHand-Official-Demo-Operation-Tutorial
 
+[Amazing Debugging.zip](https://juxitech.feishu.cn/wiki/I4K0w3W0Ri7u7EkY1qfcVoGon6e)
+
 ## Code Download
 Clone the official open-source code repository [https://github.com/pollen-robotics/AmazingHand.git](https://github.com/pollen-robotics/AmazingHand.git). Please note that there might be errors or omissions in the official open-source code.
 ```dart
