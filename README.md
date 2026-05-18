@@ -1,4 +1,4 @@
-# AmazingHand-Official-Demo-Operation-Tutorial
+# AmazingHand
 
 [Amazing Debugging.zip](https://juxitech.feishu.cn/wiki/I4K0w3W0Ri7u7EkY1qfcVoGon6e)
 
