@@ -1,6 +1,6 @@
 # AmazingHand
 
-This project is built upon the initial Amazing Hand project. https://github.com/pollen-robotics/AmazingHand/tree/Amazing-Hand-Enhanced
+This project is built upon the initial [Amazing Hand project](https://github.com/pollen-robotics/AmazingHand/tree/Amazing-Hand-Enhanced). 
 
 [Amazing Debugging.zip](https://juxitech.feishu.cn/wiki/I4K0w3W0Ri7u7EkY1qfcVoGon6e)
 
