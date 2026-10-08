@@ -12,9 +12,9 @@ This repository gathers the original mechanical design and firmware from the [Po
 
 | Folder | Description | README |
 |--------|-------------|--------|
-| **`AmazingHand-main/`** | Original design: STL/STEP CAD files, Arduino & Python examples, demos (control, simulation, hand tracking), assembly and 3D-printing guides, BOM | [English](AmazingHand-main/README.md) · [简体中文](AmazingHand-main/README_CN.md) |
-| **`AmazingHandControl/`** | Python control tools: Tkinter GUI and CLI for calibration, pose presets, sequences and live servo control | [English](AmazingHandControl/README.md) · [简体中文](AmazingHandControl/README_CN.md) |
-| **`SCS0009_ServoController/`** | SCS0009 servo debug tool: PySide6 GUI to scan the bus, read and write all 44 registers, change baud rate, factory reset, and back up parameters as `.xdat` | [English](SCS0009_ServoController/README.md) · [简体中文](SCS0009_ServoController/README_CN.md) |
+| **`AmazingHand-main/`** | Original design: STL/STEP CAD files, Arduino & Python examples, demos (control, simulation, hand tracking), assembly and 3D-printing guides, BOM | [English](AmazingHand-main/README.md) · [中文](AmazingHand-main/README_CN.md) |
+| **`AmazingHandControl/`** | Python control tools: Tkinter GUI and CLI for calibration, pose presets, sequences and live servo control | [English](AmazingHandControl/README.md) · [中文](AmazingHandControl/README_CN.md) |
+| **`SCS0009_ServoController/`** | SCS0009 servo debug tool: PySide6 GUI to scan the bus, read and write all 44 registers, change baud rate, factory reset, and back up parameters as `.xdat` | [English](SCS0009_ServoController/README.md) · [中文](SCS0009_ServoController/README_CN.md) |
 
 ## 🔧 Hardware
 
