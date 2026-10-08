@@ -1,0 +1,18 @@
+scservo_sdk — Feetech SCServo Python SDK
+======================================================================
+
+This directory contains the Feetech SCServo Python SDK, redistributed
+unmodified as a dependency of SCS0009_ServoController. This tool cannot
+communicate with SCS0009 servos without it.
+
+It is third-party software and remains the property of its authors:
+
+    Feetech (飞特) — https://www.feetech.cn/
+
+The vendor supplies this SDK to its customers, but the files as shipped
+carry no license or copyright header, so no license terms are declared
+here. If you redistribute this repository, keep this notice alongside
+the SDK.
+
+Everything outside this directory is Juxi Technology's own work, covered
+by the MIT license in ../LICENSE.

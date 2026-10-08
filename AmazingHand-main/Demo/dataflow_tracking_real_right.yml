@@ -1,0 +1,25 @@
+nodes:
+  - id: hand_tracker
+    build: pip install -e HandTracking
+    path: HandTracking/HandTracking/main.py
+    inputs:
+      tick: dora/timer/millis/50
+    outputs:
+      - r_hand_pos
+
+  - id: hand_simulation
+    build: pip install -e AHSimulation
+    path: AHSimulation/AHSimulation/mj_mink_right.py
+    inputs:
+      r_hand_pos: hand_tracker/r_hand_pos
+      tick: dora/timer/millis/2
+      tick_ctrl: dora/timer/millis/10
+    outputs:
+      - mj_r_joints_pos
+
+  - id: hand_controller
+    build: cargo build -p AHControl --release  # ✅ 核心修改：强制编译Release稳定版，根治除零崩溃
+    path: target/release/AHControl        # ✅ 对应修改产物路径：debug → release
+    args: --serialport /dev/ttyACM0 --config AHControl/config/r_hand.toml     #--serialport /dev/ttyACM0 --config AHControl/config/r_hand.toml
+    inputs:
+      mj_r_joints_pos: hand_simulation/mj_r_joints_pos

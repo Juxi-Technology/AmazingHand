@@ -1,0 +1,112 @@
+# AmazingHand GUI Configuration
+
+# Serial port settings
+serial:
+  # Default serial port for Windows/Linux
+  port_windows: COM9
+  port_linux: /dev/ttyACM0
+  # Communication baudrate
+  baudrate: 1000000
+  # Available baudrate options
+  baudrate_options: [9600, 115200, 1000000]
+
+# Active hand: right | left
+# The GUI asks at startup and overrides this; --hand skips the prompt.
+hand: right
+
+# Servo configuration — right hand.
+servos:
+  # Finger assignments: [servo1_id, servo2_id]
+  # servo1 = position (odd ID), servo2 = side offset (even ID)
+  pointer: [1, 2]
+  middle: [3, 4]
+  ring: [5, 6]
+  thumb: [7, 8]
+
+  # All servo IDs in use
+  all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
+
+# Servo angle limits (degrees)
+limits:
+  # Range for raw servo positions
+  servo_min: -75
+  servo_max: 75
+  
+  # Range for auto mode base position (close/open)
+  base_min: -75
+  base_max: 75
+  
+  # Range for auto mode side offset (left/right)
+  side_min: -35
+  side_max: 35
+
+# Default speeds (1-6 scale)
+speeds:
+  default: 3
+  min: 1
+  max: 6
+
+# Auto mode interpolation extremes — right hand
+# Format: [servo1, servo2] positions for each extreme pose
+auto_extremes:
+  left_open: [32, -35]
+  right_open: [-35, 32]
+  left_closed: [75, 75]
+  right_closed: [75, 75]
+  center_open: [0, 0]
+  center_closed: [75, 75]
+
+# Raw servo targets for the global position buttons — right hand.
+# Index 0 -> servo ID 1 ... index 7 -> servo ID 8.
+# Raw units: 1024 steps over 300°, centred on 511. Calibrate on your own hand.
+raw_positions:
+  open:   [260, 760, 260, 760, 260, 760, 260, 760]
+  close:  [760, 260, 760, 260, 760, 260, 760, 260]
+  middle: [451, 571, 451, 571, 451, 571, 451, 571]
+
+# ---------------------------------------------------------------------------
+# Per-hand overrides.  Each block is merged key by key on top of the right-hand
+# values above, so only the entries that differ need to be listed.
+# ---------------------------------------------------------------------------
+hands:
+  left:
+    # Vendor convention: the left hand numbers its servos 11-18, with the
+    # fingers in mirrored order (ring first).  11-18 keeps odd = first servo
+    # of each pair, so the even-servo inversion still applies.
+    servos:
+      pointer: [15, 16]
+      middle: [13, 14]
+      ring: [11, 12]
+      thumb: [17, 18]
+      all_ids: [11, 12, 13, 14, 15, 16, 17, 18]
+
+    # Pose values are shared with the right hand.  The mounting difference is
+    # handled by angle_offset below, not by a second set of poses, so
+    # hand_config.yaml works unchanged on either hand.
+
+    # Raw servo targets.  Index 0 -> ID 11 ... index 7 -> ID 18.
+    # middle matches the vendor default exactly.  open/close are derived from
+    # the vendor's left-hand Arduino demo — the same gesture as the right hand,
+    # applied to the left hand's MiddlePos.  Verify with the
+    # "Current (0-1023)" feedback row before relying on them.
+    raw_positions:
+      open:   [380, 642, 380, 642, 380, 642, 380, 642]
+      close:  [880, 142, 880, 142, 880, 142, 880, 142]
+      middle: [571, 451, 571, 451, 571, 451, 571, 451]
+
+    # The left hand's servo horns sit half a step rotated relative to the right
+    # hand's, so the same physical gesture lands 120 raw (35.16°) away.  This is
+    # applied only when converting between pose values and raw servo positions.
+    angle_offset: -35.16
+
+    # The left hand is a mirror, and the vendor drives it with each finger's two
+    # servo values reversed — the same gesture needs (b, a) not (a, b).  Without
+    # this, spread gestures come out inverted (a V-sign collapses, an open hand
+    # splays).  Stored poses stay in right-hand order; this is applied on the way
+    # out and inverted again when saving.
+    mirror_pose: true
+
+# Data file paths
+paths:
+  # Poses + sequences storage
+  poses_sequences_file: data/hand_config.yaml
