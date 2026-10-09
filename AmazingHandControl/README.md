@@ -32,13 +32,13 @@ pyproject.toml        – Package metadata, dependencies, pytest config
 data/
   config.yaml         – App settings (serial ports, limits, raw position targets)
   hand_config.yaml    – Saved poses and sequences
-docs/
-  REQUIREMENTS.md     – Requirements & acceptance criteria
-  user_manual.md      – User manual
-  CONFIG_FORMAT.md    – Config file format reference
-  scs_servo_protocol.md – SCS0009 register reference
-  CHANGES.md          – Changelog: what was changed vs. the original, and why
-  优化说明.md          – Same document, in Chinese
+docs/                 – Tutorials, one folder per language (en, zh-hans, zh-hant, de, es, fr, it, ja, ko, pt-br, pt-pt)
+  <lang>/REQUIREMENTS.md     – Requirements & acceptance criteria
+  <lang>/user_manual.md      – User manual
+  <lang>/CONFIG_FORMAT.md    – Config file format reference
+  <lang>/scs_servo_protocol.md – SCS0009 register reference
+  <lang>/CHANGES.md          – Changelog: what was changed vs. the original, and why
+  en/screenshots/            – PNG captures referenced by every language
 tests/
   test_hand_logic.py      – Unit tests for hand_logic (155 tests)
   test_gui_utils.py       – Unit tests for GUI utilities (51 tests)
@@ -450,7 +450,7 @@ pytest tests/test_system_hardware.py tests/test_cmd_hardware.py --hardware
 
 `test_cmd_hardware.py` verifies the CLI layer end-to-end: pose positions, speed parameter, sequence steps, `wait_for_motion`, `--list` output, and torque disable.
 
-See `docs/REQUIREMENTS.md` for the full requirements and acceptance criteria.
+See `docs/en/REQUIREMENTS.md` for the full requirements and acceptance criteria.
 
 > Note: the non-hardware tests assert the **fallback defaults** in `hand_logic.py`, which still carry the original −40…110 scale. `data/config.yaml` overrides them at runtime, so the tests pass regardless of your calibration — but they do not validate your live settings.
 

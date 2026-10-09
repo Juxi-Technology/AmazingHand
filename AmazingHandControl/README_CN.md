@@ -33,13 +33,13 @@ pyproject.toml        – 包元数据、依赖、pytest 配置
 data/
   config.yaml         – 应用设置(串口、限位、原始值目标)
   hand_config.yaml    – 已保存的手势与序列
-docs/
-  REQUIREMENTS.md       – 需求与验收标准
-  user_manual.md        – 用户手册
-  CONFIG_FORMAT.md      – 配置文件格式说明
-  scs_servo_protocol.md – SCS0009 寄存器参考
-  优化说明.md            – 相对原版的改动说明与原因
-  CHANGES.md            – 同一份文档的英文版
+docs/                 – 教程，按语言分目录（en、zh-hans、zh-hant、de、es、fr、it、ja、ko、pt-br、pt-pt）
+  <lang>/REQUIREMENTS.md     – 需求与验收标准
+  <lang>/user_manual.md      – 用户手册
+  <lang>/CONFIG_FORMAT.md    – 配置文件格式说明
+  <lang>/scs_servo_protocol.md – SCS0009 寄存器参考
+  <lang>/CHANGES.md          – 相对原版的改动说明与原因
+  en/screenshots/            – 各语言共用的截图
 tests/
   test_hand_logic.py      – hand_logic 单元测试(155 项)
   test_gui_utils.py       – GUI 工具函数单元测试(51 项)
@@ -451,7 +451,7 @@ pytest tests/test_system_hardware.py tests/test_cmd_hardware.py --hardware
 
 `test_cmd_hardware.py` 端到端验证 CLI 层:姿势位置、速度参数、序列步骤、`wait_for_motion`、`--list` 输出,以及退出时关闭力矩。
 
-完整的验收标准见 `docs/REQUIREMENTS.md`。
+完整的验收标准见 `docs/zh-hans/REQUIREMENTS.md`。
 
 > 注意:非硬件测试断言的是 `hand_logic.py` 里的**兜底默认值**,那套默认值仍是原版的 −40…110 尺度。运行时 `data/config.yaml` 会覆盖它们,所以无论你怎么标定,测试都能通过 —— 但也意味着**测试并不会校验你当前的标定参数**。
 

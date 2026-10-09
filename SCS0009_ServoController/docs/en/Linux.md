@@ -1,3 +1,5 @@
+English | [Deutsch](../de/Linux.md) | [Español](../es/Linux.md) | [Français](../fr/Linux.md) | [Italiano](../it/Linux.md) | [日本語](../ja/Linux.md) | [한국어](../ko/Linux.md) | [Português (BR)](../pt-br/Linux.md) | [Português (PT)](../pt-pt/Linux.md) | [简体中文](../zh-hans/Linux.md) | [繁體中文](../zh-hant/Linux.md)
+
 # SCS0009 Servo Debug Tool — Linux Guide
 
 For Ubuntu / Debian / other mainstream distros. Key points: serial permissions (dialout), USB-to-serial device detection.
@@ -37,7 +39,6 @@ pip install -r requirements.txt
 ```
 
 > ⚠️ **Create the virtual environment only ONCE**. Re-running it will reset/overwrite the environment (clearing installed deps). After that, just `source .venv/bin/activate`.
-
 
 > If pip reports "externally-managed-environment", use a venv or `pip install --break-system-packages -r requirements.txt`.
 

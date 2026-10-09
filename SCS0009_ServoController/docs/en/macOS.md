@@ -1,3 +1,5 @@
+English | [Deutsch](../de/macOS.md) | [Español](../es/macOS.md) | [Français](../fr/macOS.md) | [Italiano](../it/macOS.md) | [日本語](../ja/macOS.md) | [한국어](../ko/macOS.md) | [Português (BR)](../pt-br/macOS.md) | [Português (PT)](../pt-pt/macOS.md) | [简体中文](../zh-hans/macOS.md) | [繁體中文](../zh-hant/macOS.md)
+
 # SCS0009 Servo Debug Tool — macOS Guide
 
 For macOS 11 (Big Sur) and later. Key points: serial naming (`cu.*` vs `tty.*`), USB drivers.
@@ -43,7 +45,6 @@ pip install -r requirements.txt
 ```
 
 > ⚠️ **Create the virtual environment only ONCE**. Re-running it will reset/overwrite the environment (clearing installed deps). After that, just `source .venv/bin/activate`.
-
 
 ## 4. ⚠️ macOS Serial Naming [Key]
 

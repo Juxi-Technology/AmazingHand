@@ -44,9 +44,9 @@ English | [简体中文](README_CN.md)
 
 | OS | Guide |
 |----|-------|
-| Windows | [Windows 使用教程](docs/zh/Windows教程.md) |
-| Linux | [Linux 使用教程](docs/zh/Linux教程.md) |
-| macOS | [macOS 使用教程](docs/zh/macOS教程.md) |
+| Windows | [Windows 使用教程](docs/zh-hans/Windows.md) |
+| Linux | [Linux 使用教程](docs/zh-hans/Linux.md) |
+| macOS | [macOS 使用教程](docs/zh-hans/macOS.md) |
 
 ### English
 
@@ -287,13 +287,9 @@ In the "📁 xdat parameters (EEPROM only)" area:
 
 ```
 SCS0009_ServoController/
-├── docs/                    # Per-OS guides (Chinese and English)
-│   ├── zh/                  # Chinese guides
-│   │   ├── Windows教程.md
-│   │   ├── Linux教程.md
-│   │   └── macOS教程.md
-│   └── en/                  # English guides
-│       ├── Windows.md
+├── docs/                    # Per-OS guides, one folder per language
+│   └── <lang>/              # en, zh-hans, zh-hant, de, es, fr, it, ja, ko, pt-br, pt-pt
+│       ├── Windows.md       # (same filenames in every language)
 │       ├── Linux.md
 │       └── macOS.md
 ├── src/

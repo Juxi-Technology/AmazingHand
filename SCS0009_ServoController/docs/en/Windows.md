@@ -1,3 +1,5 @@
+English | [Deutsch](../de/Windows.md) | [Español](../es/Windows.md) | [Français](../fr/Windows.md) | [Italiano](../it/Windows.md) | [日本語](../ja/Windows.md) | [한국어](../ko/Windows.md) | [Português (BR)](../pt-br/Windows.md) | [Português (PT)](../pt-pt/Windows.md) | [简体中文](../zh-hans/Windows.md) | [繁體中文](../zh-hant/Windows.md)
+
 # SCS0009 Servo Debug Tool — Windows Guide
 
 For Windows 10 / 11. Covers installation to full servo debugging.
@@ -39,7 +41,6 @@ pip install -r requirements.txt
 ```
 
 > ⚠️ **Create the virtual environment only ONCE**. Re-running it will reset/overwrite the environment (clearing installed deps). After that, just `activate` it each time.
-
 
 > The prompt will show `(.venv)` after activation.
 

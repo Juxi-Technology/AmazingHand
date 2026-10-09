@@ -44,9 +44,9 @@
 
 | 系统 | 教程 |
 |------|------|
-| Windows | [Windows 使用教程](docs/zh/Windows教程.md) |
-| Linux | [Linux 使用教程](docs/zh/Linux教程.md) |
-| macOS | [macOS 使用教程](docs/zh/macOS教程.md) |
+| Windows | [Windows 使用教程](docs/zh-hans/Windows.md) |
+| Linux | [Linux 使用教程](docs/zh-hans/Linux.md) |
+| macOS | [macOS 使用教程](docs/zh-hans/macOS.md) |
 
 ### English
 
@@ -261,8 +261,8 @@ python -m src.gui.factory_calibration_tool --port <串口>
 1. **安全第一**：写入参数会持久化到 EEPROM。写入前确认供电稳定、机械臂不会碰撞到人或物。
 2. **供电**：SoARM 101 标准版建议 DC 5V 5A，Pro 版建议 DC 12V 5A。供电不足会导致舵机丢步或通信失败。
 3. **串口独占**：Windows 下串口被程序独占，同一端口不能同时被两个程序占用。请勿在别的程序（串口监视器）打开同一端口时使用本工具。
-4. **Linux 串口权限**：访问 `/dev/ttyUSB*` / `/dev/ttyACM*` 需将用户加入 `dialout` 组（见 [Linux 教程](docs/zh/Linux教程.md)）。
-5. **macOS 串口命名**：请使用 `/dev/cu.*`（非阻塞）而非 `/dev/tty.*`（阻塞，可能卡住），见 [macOS 教程](docs/zh/macOS教程.md)。
+4. **Linux 串口权限**：访问 `/dev/ttyUSB*` / `/dev/ttyACM*` 需将用户加入 `dialout` 组（见 [Linux 教程](docs/zh-hans/Linux.md)）。
+5. **macOS 串口命名**：请使用 `/dev/cu.*`（非阻塞）而非 `/dev/tty.*`（阻塞，可能卡住），见 [macOS 教程](docs/zh-hans/macOS.md)。
 6. **热插拔**：拔掉 USB 后程序会尝试自动重连；重新插回后点击 `🔄` 刷新端口列表。
 7. **过温 / 过压保护**：程序会监控电压与温度（温度 > 60°C 告警）。若舵机连续高温，请停机散热。
 8. **参数写入不可逆**：EEPROM 写入后原值被覆盖，无法撤销。建议先用"xdat 保存当前舵机"备份再修改。
@@ -287,13 +287,9 @@ python -m src.gui.factory_calibration_tool --port <串口>
 
 ```
 SCS0009_ServoController/
-├── docs/                    # 分系统教程（中英文）
-│   ├── zh/                  # 中文教程
-│   │   ├── Windows教程.md
-│   │   ├── Linux教程.md
-│   │   └── macOS教程.md
-│   └── en/                  # 英文教程
-│       ├── Windows.md
+├── docs/                    # 分系统教程，按语言分目录
+│   └── <lang>/              # en、zh-hans、zh-hant、de、es、fr、it、ja、ko、pt-br、pt-pt
+│       ├── Windows.md       # 各语言文件名一致
 │       ├── Linux.md
 │       └── macOS.md
 ├── src/

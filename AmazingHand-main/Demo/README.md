@@ -1,5 +1,19 @@
 # Example control for the Pollen Robotics "AmazingHand" (a.k.a. AH!)
 
+## One-click deployment tutorial (recommended)
+
+Step-by-step guides that install the toolchain, set up the servo bus and deploy this Demo:
+
+| Platform | English | 简体中文 |
+|---|---|---|
+| Linux (Ubuntu) | [Linux Tutorial](docs/en/Linux_Tutorial.md) | [Linux 使用教程](docs/zh-hans/Linux_Tutorial.md) |
+| macOS | [macOS Tutorial](docs/en/Mac_Tutorial.md) | [macOS 使用教程](docs/zh-hans/Mac_Tutorial.md) |
+| Windows | [Windows Tutorial](docs/en/Windows_Tutorial.md) | [Windows 使用教程](docs/zh-hans/Windows_Tutorial.md) |
+
+Every language folder under `docs/` carries the same three guides: `en`, `de`, `es`, `fr`, `it`, `ja`, `ko`, `pt-br`, `pt-pt`, `zh-hans`, `zh-hant`.
+
+The manual steps below assume the environment is already set up.
+
 ## How to use:
 - Install Rust: https://www.rust-lang.org/tools/install
 - Install uv: https://docs.astral.sh/uv/getting-started/installation/
