@@ -15,6 +15,8 @@ Die Servo-Zuordnung, die Pose-Bibliothek und die Umrechnungsformeln stimmen alle
 
 ## Schnellstart
 
+Öffne ein Terminal und wechsle in das Amazinghand-web-Verzeichnis:
+
 ```bash
 pip install -r requirements.txt
 
@@ -73,8 +75,6 @@ Quelle: `DEFAULT_HAND_SERVOS` in `AmazingHandControl/hand_logic.py` und
 
 ### Die zwei Servos eines Fingers haben unterschiedliche Aufgaben ⚠️
 
-Offizielle Konvention:
-
 ```
 servo1 (ungerade ID) = Flexionsachse   offen ↔ geschlossen
 servo2 (gerade ID)   = Spreizachse     Finger zusammen ↔ auseinander
@@ -83,7 +83,7 @@ servo2 (gerade ID)   = Spreizachse     Finger zusammen ↔ auseinander
 Die UI zeigt genau diese beiden Achsen. **„Der Finger spreizt sich nicht / schließt sich nicht" bedeutet, dass sich die Spreizachse nicht bewegt** —
 ein scherenartiges V entsteht durch Index-Spreizung `+17` und Mittelfinger-Spreizung `−30` (einer positiv, einer negativ).
 
-Sie werden auf dem Bus kombiniert (entsprechend dem offiziellen Speicherformat):
+Sie werden auf dem Bus kombiniert:
 
 ```
 servo1 = Flexion + Spreizung
@@ -175,9 +175,6 @@ Montageunterschiede einen anderen Satz benötigt, füge dieser Definition einen 
 }
 ```
 
-Eine Pose ohne `right`- / `left`-Schlüssel verwendet die geteilten Werte an beiden Händen — du musst also nur
-die schreiben, die tatsächlich abweichen. Die Mittelstellung (`middle`) ist weiterhin für beide Hände gemeinsam.
-
 ---
 
 ## Zwei Modi
@@ -232,9 +229,6 @@ Die Endpunkt-Zielwerte stehen im Abschnitt `camera` von `config.json`:
 
 Beide Spreizungs-Endwerte sind 0 für den Mittelfinger (er schwingt nicht seitlich).
 
-> **Diese beiden Sätze sind für beide Hände gemeinsam.** Wenn sich eine Hand falsch herum bewegt, ändere diese
-> Hand in `camera.side_sign` (siehe die Tuning-Kurzübersicht am Ende) und lade die Seite neu.
-
 ### 3. Der Daumen führt nur Flexion aus ⚠️
 
 Das CMC des Daumens ist ein **Sattelgelenk (opponierbar)**, und seine Flexion ist eng mit der Abduktion gekoppelt —
@@ -276,9 +270,7 @@ Und eine Faust sollte ohnehin mit zusammengelegten Fingern ausgeführt werden.
 | Handflächenknochen | neutrales Grau |
 
 Der kleine Finger wird nicht für das Gesten-Mapping verwendet, aber sein **Basis-MCP (Landmark 17) definiert das
-Handflächen-Koordinatensystem der rechten Hand**, er kann also nicht einfach weggelassen werden. Das Modell regressiert
-alle 21 Punkte auf einmal und kennt keinen Zustand „dieser Finger wurde nicht gesehen“ — wenn die Handfläche ihn
-verdeckt, liefert es trotzdem eine **geratene** Position. Ihn gedämpft zu zeichnen macht offensichtlich, wann geraten wird.
+Handflächen-Koordinatensystem der rechten Hand**, er kann also nicht einfach weggelassen werden.
 
 ### Tuning-Kurzübersicht
 

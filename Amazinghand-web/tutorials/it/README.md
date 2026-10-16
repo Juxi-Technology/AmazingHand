@@ -15,6 +15,8 @@ La mappa dei servo, la libreria di pose e le formule di conversione sono allinea
 
 ## Avvio rapido
 
+Apri un terminale ed entra nella cartella Amazinghand-web:
+
 ```bash
 pip install -r requirements.txt
 
@@ -73,8 +75,6 @@ Fonte: `DEFAULT_HAND_SERVOS` in `AmazingHandControl/hand_logic.py` e
 
 ### I due servo di un dito svolgono compiti diversi ⚠️
 
-Convenzione ufficiale:
-
 ```
 servo1 (ID dispari) = asse di flessione      aperto ↔ chiuso
 servo2 (ID pari)    = asse di divaricazione  dita unite ↔ separate
@@ -83,7 +83,7 @@ servo2 (ID pari)    = asse di divaricazione  dita unite ↔ separate
 L'interfaccia mostra esattamente questi due assi. **«Il dito non si divarica / non si chiude» significa che l'asse di divaricazione (splay) non si sta muovendo** —
 una V a forbice deriva da uno splay dell'indice `+17` e uno splay del medio `−30` (uno positivo, uno negativo).
 
-Sul bus vengono combinati (in linea con il formato di memorizzazione ufficiale):
+Sul bus vengono combinati:
 
 ```
 servo1 = flessione + divaricazione
@@ -175,9 +175,6 @@ a causa di differenze nell'assemblaggio meccanico, aggiungi una chiave `right` o
 }
 ```
 
-Una posa senza chiave `right` / `left` usa i valori condivisi su entrambe le mani — quindi devi scrivere
-solo quelli che differiscono davvero. La posizione centrale (`middle`) è comunque condivisa da entrambe le mani.
-
 ---
 
 ## Due modalità
@@ -231,9 +228,6 @@ I target degli estremi si trovano nella sezione `camera` di `config.json`:
 
 Entrambi gli estremi della divaricazione sono 0 per il dito medio (non oscilla lateralmente).
 
-> **Questi due set sono condivisi da entrambe le mani.** Se una mano si muove nel verso sbagliato, modifica quella
-> mano in `camera.side_sign` (vedi il promemoria per la regolazione alla fine), poi ricarica la pagina.
-
 ### 3. Il pollice si flette soltanto ⚠️
 
 Il CMC del pollice è un'**articolazione a sella (opponibile)**, e la sua flessione si accoppia strettamente con l'abduzione —
@@ -275,9 +269,7 @@ E poi un pugno dovrebbe comunque avere le dita unite.
 | Ossa del palmo | grigio neutro |
 
 Il mignolo non viene usato per la mappatura dei gesti, ma il suo **MCP di base (landmark 17) definisce il sistema di
-coordinate del palmo della mano destra**, quindi non può essere semplicemente scartato. Il modello regressiona tutti e 21 i punti
-in una volta sola e non ha uno stato «questo dito non è stato visto» — quando il palmo lo nasconde, restituisce comunque una posizione
-**stimata**. Disegnarlo in modo tenue rende evidente quando sta stimando.
+coordinate del palmo della mano destra**, quindi non può essere semplicemente scartato.
 
 ### Promemoria per la regolazione
 

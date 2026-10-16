@@ -15,6 +15,8 @@ The servo map, pose library and conversion formulas all line up with
 
 ## Quick start
 
+Open a terminal and cd into the Amazinghand-web folder:
+
 ```bash
 pip install -r requirements.txt
 
@@ -73,8 +75,6 @@ Source: `DEFAULT_HAND_SERVOS` in `AmazingHandControl/hand_logic.py` and
 
 ### A finger's two servos do different jobs ⚠️
 
-Official convention:
-
 ```
 servo1 (odd ID)  = flexion axis   open ↔ closed
 servo2 (even ID) = splay axis     fingers together ↔ apart
@@ -83,7 +83,7 @@ servo2 (even ID) = splay axis     fingers together ↔ apart
 The UI shows exactly these two axes. **"The finger won't spread / won't close up" means the splay axis isn't moving** —
 a scissors-style V comes from index splay `+17` and middle splay `−30` (one positive, one negative).
 
-They are combined on the wire (matching the official storage format):
+They are combined on the wire:
 
 ```
 servo1 = flexion + splay
@@ -174,9 +174,6 @@ mechanical assembly differences, add a `right` or `left` key to that entry and i
 }
 ```
 
-A pose without a `right` / `left` key uses the shared values on both hands — so you only need to write
-the ones that actually differ. The middle position (`middle`) is still shared by both hands.
-
 ---
 
 ## Two modes
@@ -230,9 +227,6 @@ The endpoint targets live in the `camera` section of `config.json`:
 
 Both splay ends are 0 for the middle finger (it doesn't swing sideways).
 
-> **These two sets are shared by both hands.** If one hand turns out to move the wrong way, change that
-> hand in `camera.side_sign` (see the tuning cheat sheet at the end), then reload the page.
-
 ### 3. The thumb only flexes ⚠️
 
 The thumb's CMC is a **saddle (opposable) joint**, and its flexion couples tightly with abduction —
@@ -274,9 +268,7 @@ And a fist should be fingers-together anyway.
 | Palm bones | neutral grey |
 
 The pinky isn't used for gesture mapping, but its **base MCP (landmark 17) defines the right hand's palm
-coordinate frame**, so it can't just be dropped. The model regresses all 21 points at once and has no
-"this finger wasn't seen" state — when the palm hides it, it still returns a **guessed** position.
-Drawing it dim makes it obvious when it's guessing.
+coordinate frame**, so it can't just be dropped.
 
 ### Tuning cheat sheet
 

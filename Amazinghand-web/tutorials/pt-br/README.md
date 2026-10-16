@@ -15,6 +15,8 @@ O mapa de servos, a biblioteca de poses e as fórmulas de conversão batem com o
 
 ## Início rápido
 
+Abra um terminal e entre na pasta Amazinghand-web:
+
 ```bash
 pip install -r requirements.txt
 
@@ -73,8 +75,6 @@ Fonte: `DEFAULT_HAND_SERVOS` em `AmazingHandControl/hand_logic.py` e
 
 ### Os dois servos de um dedo fazem trabalhos diferentes ⚠️
 
-Convenção oficial:
-
 ```
 servo1 (ID ímpar) = eixo de flexão   aberto ↔ fechado
 servo2 (ID par)   = eixo de splay    dedos juntos ↔ afastados
@@ -83,7 +83,7 @@ servo2 (ID par)   = eixo de splay    dedos juntos ↔ afastados
 A interface mostra exatamente esses dois eixos. **"O dedo não abre / não fecha" significa que o eixo de splay (abertura lateral) não está se movendo** —
 um V estilo tesoura vem do splay do indicador `+17` e do splay do médio `−30` (um positivo, um negativo).
 
-Eles são combinados no barramento (seguindo o formato de armazenamento oficial):
+Eles são combinados no barramento:
 
 ```
 servo1 = flexão + splay
@@ -174,9 +174,6 @@ por causa de diferenças na montagem mecânica, adicione uma chave `right` ou `l
 }
 ```
 
-Uma pose sem chave `right` / `left` usa os valores compartilhados nas duas mãos — então você só precisa escrever
-as que realmente diferem. A posição do meio (`middle`) continua compartilhada pelas duas mãos.
-
 ---
 
 ## Dois modos
@@ -230,9 +227,6 @@ Os alvos das extremidades ficam na seção `camera` do `config.json`:
 
 As duas extremidades do splay são 0 para o dedo médio (ele não balança para os lados).
 
-> **Esses dois conjuntos são compartilhados pelas duas mãos.** Se uma mão acabar se movendo ao contrário, mude aquela
-> mão em `camera.side_sign` (veja a cola de ajustes no final) e recarregue a página.
-
 ### 3. O polegar só flexiona ⚠️
 
 A CMC do polegar é uma **articulação em sela (oponível)**, e sua flexão se acopla fortemente com a abdução —
@@ -274,9 +268,7 @@ E um punho fechado deve ter os dedos juntos de qualquer forma.
 | Ossos da palma | cinza neutro |
 
 O mindinho não é usado no mapeamento de gestos, mas sua **MCP de base (landmark 17) define o sistema de
-coordenadas da palma da mão direita**, então não dá para simplesmente descartá-lo. O modelo regride os 21 pontos de uma vez
-e não tem um estado "este dedo não foi visto" — quando a palma o esconde, ele ainda retorna uma posição **estimada**.
-Desenhá-lo em tom apagado deixa óbvio quando ele está chutando.
+coordenadas da palma da mão direita**, então não dá para simplesmente descartá-lo.
 
 ### Cola de ajustes
 

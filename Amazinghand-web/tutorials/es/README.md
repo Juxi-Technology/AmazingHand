@@ -15,6 +15,8 @@ El mapa de servos, la biblioteca de poses y las fórmulas de conversión coincid
 
 ## Inicio rápido
 
+Abre una terminal y entra en la carpeta Amazinghand-web:
+
 ```bash
 pip install -r requirements.txt
 
@@ -73,8 +75,6 @@ Fuente: `DEFAULT_HAND_SERVOS` en `AmazingHandControl/hand_logic.py` y
 
 ### Los dos servos de un dedo hacen trabajos distintos ⚠️
 
-Convención oficial:
-
 ```
 servo1 (ID impar)  = eje de flexión   abierto ↔ cerrado
 servo2 (ID par)    = eje de splay     dedos juntos ↔ separados
@@ -83,7 +83,7 @@ servo2 (ID par)    = eje de splay     dedos juntos ↔ separados
 La interfaz muestra exactamente estos dos ejes. **«El dedo no se abre / no se cierra» significa que el eje de splay no se mueve** —
 una V tipo tijera sale de un splay del índice de `+17` y un splay del medio de `−30` (uno positivo, uno negativo).
 
-Se combinan en el bus (igual que el formato de almacenamiento oficial):
+Se combinan en el bus:
 
 ```
 servo1 = flexión + splay
@@ -149,7 +149,7 @@ idéntico byte a byte al `data/hand_config.yaml` oficial, así que puedes compar
 
 ## Poses predefinidas (19)
 
-| Pose | | Pose | |
+| Pose | Descripción | Pose | Descripción |
 |---|---|---|---|
 | `open` | Abierta | `wave1` | Saludo |
 | `close` / `stone` | Puño | `wave_r` / `wave_l` | Deslizar a la derecha / izquierda |
@@ -173,9 +173,6 @@ diferencias de montaje mecánico, añade una clave `right` o `left` a esa entrad
   "right":     [ ... 8 valores ... ]                // opcional: solo la mano derecha
 }
 ```
-
-Una pose sin clave `right` / `left` usa los valores compartidos en ambas manos — así que solo necesitas escribir
-las que realmente difieren. La posición central (`middle`) sigue compartida por ambas manos.
 
 ---
 
@@ -230,9 +227,6 @@ Los objetivos de los extremos están en la sección `camera` de `config.json`:
 
 Ambos extremos del splay son 0 para el dedo medio (no se mueve de lado).
 
-> **Estos dos conjuntos son compartidos por ambas manos.** Si una mano resulta moverse al revés, cambia esa
-> mano en `camera.side_sign` (ver la guía rápida de ajuste al final) y recarga la página.
-
 ### 3. El pulgar solo flexiona ⚠️
 
 La CMC del pulgar es una **articulación en silla de montar (oponible)**, y su flexión se acopla estrechamente con la abducción —
@@ -273,10 +267,7 @@ Y un puño debería ser con los dedos juntos de todas formas.
 | Meñique | gris apagado |
 | Huesos de la palma | gris neutro |
 
-El meñique no se usa para el mapeo de gestos, pero su **MCP base (landmark 17) define el sistema de coordenadas
-de la palma de la mano derecha**, así que no se puede simplemente descartar. El modelo regresa los 21 puntos a la vez y no tiene
-un estado de "este dedo no se vio" — cuando la palma lo tapa, aun así devuelve una posición **adivinada**.
-Dibujarlo apagado deja claro cuándo está adivinando.
+El meñique no se usa para el mapeo de gestos, pero su **MCP base (landmark 17) define el sistema de coordenadas de la palma de la mano derecha**, así que no se puede simplemente descartar.
 
 ### Guía rápida de ajuste
 
@@ -341,7 +332,7 @@ Protocolo frontend/backend:
 
 ## Seguridad
 
-| Elemento | |
+| Elemento | Descripción |
 |---|---|
 | **Límites de pose** | ±120° (`limits` en `config.json`); las 19 poses verificadas para mantenerse dentro |
 | **Deduplicación de cambios** | los cambios por debajo de 0.5° no se envían, así no se inunda el bus con ruido |

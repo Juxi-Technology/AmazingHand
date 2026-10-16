@@ -15,6 +15,8 @@ La table des servos, la bibliothèque de poses et les formules de conversion son
 
 ## Démarrage rapide
 
+Ouvrez un terminal et placez-vous dans le dossier Amazinghand-web :
+
 ```bash
 pip install -r requirements.txt
 
@@ -73,8 +75,6 @@ Source : `DEFAULT_HAND_SERVOS` dans `AmazingHandControl/hand_logic.py` et
 
 ### Les deux servos d'un doigt ont des rôles distincts ⚠️
 
-Convention officielle :
-
 ```
 servo1 (ID impair) = axe de flexion    ouvert ↔ fermé
 servo2 (ID pair)   = axe d'écartement  doigts serrés ↔ doigts écartés
@@ -83,7 +83,7 @@ servo2 (ID pair)   = axe d'écartement  doigts serrés ↔ doigts écartés
 L'interface affiche exactement ces deux axes. **« Le doigt ne s'écarte pas / ne se referme pas » signifie que l'axe d'écartement ne bouge pas** —
 un V en ciseau vient de l'écartement de l'index `+17` et de celui du majeur `−30` (un positif, un négatif).
 
-Ils sont combinés sur le bus (conformément au format de stockage officiel) :
+Ils sont combinés sur le bus :
 
 ```
 servo1 = flexion + écartement
@@ -174,9 +174,6 @@ différences d'assemblage mécanique, ajoutez une clé `right` ou `left` à cett
 }
 ```
 
-Une pose sans clé `right` / `left` utilise les valeurs partagées sur les deux mains — vous n'avez donc à écrire
-que celles qui diffèrent réellement. La position médiane (`middle`) reste partagée par les deux mains.
-
 ---
 
 ## Deux modes
@@ -230,9 +227,6 @@ Les cibles des extrémités se trouvent dans la section `camera` de `config.json
 
 Les deux extrémités d'écartement valent 0 pour le majeur (il ne s'écarte pas latéralement).
 
-> **Ces deux jeux sont partagés par les deux mains.** Si une main s'avère bouger dans le mauvais sens, modifiez cette
-> main dans `camera.side_sign` (voir l'aide-mémoire de réglage en fin de document), puis rechargez la page.
-
 ### 3. Le pouce ne fait que fléchir ⚠️
 
 Le CMC du pouce est une **articulation en selle (opposable)**, et sa flexion est fortement couplée à l'abduction —
@@ -274,9 +268,7 @@ Et un poing, de toute façon, c'est des doigts serrés.
 | Os de la paume | gris neutre |
 
 L'auriculaire ne sert pas à la reconnaissance des gestes, mais son **MCP de base (landmark 17) définit le repère de la paume
-de la main droite**, on ne peut donc pas simplement le supprimer. Le modèle régresse les 21 points d'un coup et n'a pas
-d'état « ce doigt n'a pas été vu » — quand la paume le masque, il renvoie quand même une position **devinée**.
-Le dessiner en sombre rend évident le moment où il devine.
+de la main droite**, on ne peut donc pas simplement le supprimer.
 
 ### Aide-mémoire de réglage
 
