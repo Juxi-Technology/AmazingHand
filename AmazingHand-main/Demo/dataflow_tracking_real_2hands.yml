@@ -1,6 +1,6 @@
 nodes:
   - id: hand_tracker
-    build: pip install -e HandTracking
+    build: pip install -e HandTracking --link-mode=copy
     path: HandTracking/HandTracking/main.py
     inputs:
       tick: dora/timer/millis/50
@@ -9,7 +9,7 @@ nodes:
       - l_hand_pos
 
   - id: r_hand_simulation
-    build: pip install -e AHSimulation
+    build: pip install -e AHSimulation --link-mode=copy
     path: AHSimulation/AHSimulation/mj_mink_right.py
     inputs:
       r_hand_pos: hand_tracker/r_hand_pos
@@ -19,7 +19,7 @@ nodes:
       - mj_r_joints_pos
 
   - id: l_hand_simulation
-    build: pip install -e AHSimulation
+    build: pip install -e AHSimulation --link-mode=copy
     path: AHSimulation/AHSimulation/mj_mink_left.py
     inputs:
       l_hand_pos: hand_tracker/l_hand_pos
@@ -29,8 +29,8 @@ nodes:
       - mj_l_joints_pos
 
   - id: hand_controller
-    build: cargo build -p AHControl
-    path: target/debug/AHControl #--serialport /dev/ttyACM0 --config AHControl/config/r_hand.toml
+    build: cargo build -p AHControl --release  # 强制 release：debug 版会触发除零崩溃
+    path: target/release/AHControl #--serialport /dev/ttyACM0 --config AHControl/config/r_hand.toml
     args: --serialport /dev/ttyACM0 --config AHControl/config/2hands.toml
     inputs:
       mj_r_joints_pos: r_hand_simulation/mj_r_joints_pos

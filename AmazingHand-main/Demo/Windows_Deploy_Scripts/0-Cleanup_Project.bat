@@ -56,6 +56,10 @@ REM __pycache__
 for /f "delims=" %%d in ('dir /s /b /ad "%DEMO_DIR%"\__pycache__ 2^>nul') do (
     rmdir /s /q "%%d"
 )
+REM *.egg-info left behind by "pip install -e" (keeps the shipped folder clean)
+for /f "delims=" %%d in ('dir /s /b /ad "%DEMO_DIR%"\*.egg-info 2^>nul') do (
+    rmdir /s /q "%%d"
+)
 REM .bak backup files
 for /f "delims=" %%f in ('dir /s /b "%DEMO_DIR%"\*.bak 2^>nul') do (
     del /q "%%f"
@@ -67,7 +71,7 @@ if exist "%DEMO_DIR%\out" (
     rmdir /s /q "%DEMO_DIR%\out"
     echo   Deleted Demo\out (dora logs)
 )
-echo   Cleaned __pycache__, *.bak, logs.
+echo   Cleaned __pycache__, *.egg-info, *.bak, logs.
 
 REM ---- 5. Restore default port (/dev/ttyACM0) ----
 echo [5/5] Restoring default port (/dev/ttyACM0)...

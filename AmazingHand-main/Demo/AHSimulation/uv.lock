@@ -21,16 +21,18 @@ dependencies = [
     { name = "mink" },
     { name = "mujoco" },
     { name = "onshape-to-robot" },
+    { name = "pyarrow" },
     { name = "qpsolvers", extra = ["quadprog"] },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "dora-rs", specifier = ">=0.3.11" },
+    { name = "dora-rs", specifier = "==0.5.0" },
     { name = "loop-rate-limiters", specifier = ">=1.1.2" },
     { name = "mink", specifier = ">=0.0.11" },
     { name = "mujoco", specifier = ">=3.3.2" },
     { name = "onshape-to-robot", specifier = ">=1.7.5" },
+    { name = "pyarrow", specifier = "<26" },
     { name = "qpsolvers", extras = ["quadprog"], specifier = ">=4.7.1" },
 ]
 

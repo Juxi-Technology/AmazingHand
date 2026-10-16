@@ -12,6 +12,18 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM --- MSVC: dora build runs "cargo build" for AHControl, so this session needs
+REM  the linker too. _msvc_env.bat loads vcvars64.bat into THIS session (no
+REM  setlocal, so PATH/LIB/INCLUDE reach cargo). Warn only, never abort.
+set "_MSVC_HELPER=%~dp0_msvc_env.bat"
+if not exist "%_MSVC_HELPER%" (
+    echo   [WARNING] _msvc_env.bat is missing from this folder. If the Rust build
+    echo             fails, re-extract the complete Windows_Deploy_Scripts folder.
+) else (
+    call "%_MSVC_HELPER%"
+    if errorlevel 1 echo   [WARNING] MSVC C++ build tools not available - the Rust build will most likely fail.
+)
+
 :menu_main
 echo.
 echo ============================================
@@ -77,6 +89,14 @@ echo   Config: %YML%
 echo.
 echo [1/3] Starting dora daemon...
 dora up
+if errorlevel 1 (
+    REM  dora up gives up after ~2s and prints "daemon not connected" on slow
+    REM  machines even though the daemon does come up. Retry once, then only warn:
+    REM  a hard failure here would block setups that actually work.
+    echo   [WARNING] dora up reported a problem, retrying once...
+    dora up
+    if errorlevel 1 echo   [WARNING] dora daemon may not be running. If the run below fails, re-run this script.
+)
 
 echo [2/3] Activating venv...
 if exist ".venv" (

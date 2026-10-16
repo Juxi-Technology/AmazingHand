@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "dora-rs>=0.3.11",
+    # dora-rs 0.5.0 matches the dora-cli 0.5.0 the kit installs.
+    "dora-rs==0.5.0",
+    # pyarrow 26 needs numpy>=2 and does not declare it; HandTracking pins numpy<2.
+    "pyarrow<26",
     "loop-rate-limiters>=1.1.2",
     "mink>=0.0.11",
     "mujoco>=3.3.2",

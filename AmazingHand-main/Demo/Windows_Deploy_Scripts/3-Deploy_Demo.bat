@@ -23,6 +23,19 @@ if defined MISSING (
     exit /b 1
 )
 
+REM --- MSVC: "cargo build" below needs a working linker ---
+REM  _msvc_env.bat loads vcvars64.bat into THIS session (it deliberately does not
+REM  use setlocal, so PATH/LIB/INCLUDE reach cargo). Warn only - never abort, so a
+REM  machine where rustc finds MSVC by itself still gets to deploy.
+set "_MSVC_HELPER=%~dp0_msvc_env.bat"
+if not exist "%_MSVC_HELPER%" (
+    echo   [WARNING] _msvc_env.bat is missing from this folder. If the Rust build
+    echo             fails, re-extract the complete Windows_Deploy_Scripts folder.
+) else (
+    call "%_MSVC_HELPER%"
+    if errorlevel 1 echo   [WARNING] MSVC C++ build tools not available - the Rust build will most likely fail.
+)
+
 REM Script is in Demo\Windows_Deploy_Scripts, parent is the Demo folder
 set "DEMO_DIR=%~dp0.."
 cd /d "%DEMO_DIR%"
@@ -35,6 +48,14 @@ if not exist "AHControl" (
 REM --- 1. Start dora daemon ---
 echo [1/5] Starting dora daemon...
 dora up
+if errorlevel 1 (
+    REM  dora up gives up after ~2s and prints "daemon not connected" on slow
+    REM  machines even though the daemon does come up. Retry once, then only warn:
+    REM  a hard failure here would block setups that actually work.
+    echo   [WARNING] dora up reported a problem, retrying once...
+    dora up
+    if errorlevel 1 echo   [WARNING] dora daemon may not be running. If the build below fails, re-run this script.
+)
 
 REM --- 2. Create / reuse venv ---
 echo [2/5] Preparing Python 3.12 venv...
@@ -104,12 +125,17 @@ if errorlevel 1 (
 cd ..
 
 REM --- Fallback: force mediapipe 0.10.14 ---
+REM  mediapipe declares numpy / jax / opencv-contrib-python with no upper bound, so
+REM  a bare install pulls numpy 2.x + opencv 5.x into the shared venv while
+REM  HandTracking pins numpy<2. Constrain numpy here so the resolver picks the
+REM  numpy<2 builds (opencv 4.x, jax 0.7.x) that dora's HandTracking install would
+REM  have to downgrade to anyway.
 echo [extra] Checking mediapipe==0.10.14 (known pitfall, force reinstall)...
 uv pip uninstall -y mediapipe >nul 2>nul
-uv pip install mediapipe==0.10.14
+uv pip install mediapipe==0.10.14 "numpy<2"
 if errorlevel 1 (
     echo   [WARNING] mediapipe reinstall failed. You can run manually:
-    echo   uv pip install mediapipe==0.10.14
+    echo   uv pip install mediapipe==0.10.14 "numpy<2"
 ) else (
     echo   mediapipe==0.10.14 ready.
 )
