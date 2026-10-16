@@ -1,0 +1,10 @@
+# AmazingHand 网页控制 —— 依赖
+#
+# rustypot 提供 SCS0009 舵机的 Python 驱动，和官方 AHControl（Rust）用的是同一套底层协议。
+rustypot
+
+# 串口枚举（自动探测 COM 口）
+pyserial>=3.5
+
+# WebSocket 服务端
+websockets>=12

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AmazingHand 网页控制</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1 data-i18n="app.title">AmazingHand 控制台</h1>
+  <div class="status">
+    <span id="conn" class="badge bad">未连接</span>
+    <span id="port-info" class="muted"></span>
+    <div id="lang-switch" class="lang-switch"><!-- JS 生成 --></div>
+  </div>
+</header>
+
+<div class="port-bar">
+  <span class="muted" data-i18n="port.label">串口</span>
+  <select id="port-select"><option data-i18n="port.detecting">检测中…</option></select>
+  <button id="btn-port-refresh" class="ghost" data-i18n-title="port.refreshTitle" title="重新扫描串口"
+          data-i18n="port.refresh">刷新</button>
+  <button id="btn-port-connect" class="primary">连接</button>
+  <button id="btn-port-disconnect" class="warn" disabled data-i18n="port.disconnect">断开</button>
+  <span id="port-state" class="muted"></span>
+  <span class="bar-sep"></span>
+  <span class="muted nowrap" data-i18n="target.label">控制对象</span>
+  <div id="targets" class="targets"></div>
+</div>
+
+<nav class="tabs">
+  <button id="tab-manual" class="tab active" data-i18n="tab.manual">手动控制</button>
+  <button id="tab-camera" class="tab" data-i18n="tab.camera">摄像头互动遥控</button>
+</nav>
+
+<!-- ------------------------------------------------ 手动控制 -->
+<section id="panel-manual" class="panel">
+  <div class="hand-switch">
+    <span id="hand-meta" class="muted"></span>
+  </div>
+
+  <div class="fingers" id="fingers"><!-- JS 生成 --></div>
+
+  <h2 data-i18n="manual.poses">预设姿态</h2>
+  <div class="gestures" id="gestures"><!-- JS 生成 --></div>
+
+  <h2 data-i18n="manual.actions">操作</h2>
+  <div class="actions">
+    <button id="btn-middle" class="primary" data-i18n="btn.middle">全部回中位</button>
+    <button id="btn-torque" class="warn">松开力矩</button>
+    <button id="btn-stop" class="danger" data-i18n="btn.stop">急停（全部松开）</button>
+  </div>
+
+</section>
+
+<!-- ------------------------------------------------ 摄像头 -->
+<section id="panel-camera" class="panel hidden">
+  <div class="cam-toolbar">
+    <span class="muted" data-i18n="cam.label">摄像头</span>
+    <select id="cam-device"><option value="" data-i18n="cam.defaultDevice">默认设备</option></select>
+    <button id="btn-cam-refresh" class="ghost" data-i18n-title="cam.refreshTitle" title="重新列出摄像头"
+            data-i18n="cam.refresh">刷新</button>
+    <button id="btn-cam-start" class="primary" data-i18n="cam.start">启动</button>
+    <button id="btn-cam-stop" class="warn" disabled data-i18n="cam.stop">停止</button>
+    <label class="muted nowrap"><input type="checkbox" id="cam-draw" checked> <span data-i18n="cam.skeleton">骨骼</span></label>
+    <span class="muted nowrap legend" data-i18n-title="legend.title"
+          title="骨骼配色：手掌是中性灰，小拇指是暗色">
+      <span><i style="background:#f97316"></i><span data-i18n="legend.thumb">拇</span></span>
+      <span><i style="background:#ef4444"></i><span data-i18n="legend.index">食</span></span>
+      <span><i style="background:#3b82f6"></i><span data-i18n="legend.middle">中</span></span>
+      <span><i style="background:#eab308"></i><span data-i18n="legend.ring">无</span></span>
+      <span><i style="background:#5b6b7d"></i><span data-i18n="legend.pinky">小</span></span>
+    </span>
+  </div>
+
+  <div class="cam-toolbar">
+    <span class="muted nowrap" data-i18n="cal.label">采集</span>
+    <div id="cal-buttons" class="cal-buttons"><!-- JS 生成 --></div>
+    <span id="cal-step" class="cal-step"></span>
+    <div class="cal-bar"><i id="cal-bar-fill"></i></div>
+    <span id="cal-state" class="muted"></span>
+  </div>
+
+  <p class="muted cam-hint" data-i18n-html="cal.hintHtml"></p>
+
+  <div class="cam-stage">
+    <div class="video-wrap">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+      <div id="cam-placeholder" class="cam-placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <p data-i18n="cam.placeholder1">摄像头未启动</p>
+        <p class="muted" data-i18n="cam.placeholder2">点上面的「启动」，浏览器会询问权限 —— 选「允许」</p>
+      </div>
+    </div>
+
+    <div class="cam-status">
+      <div class="row"><span data-i18n="cam.row.state">状态</span><b id="cam-state">—</b></div>
+      <div class="row"><span data-i18n="cam.row.res">分辨率</span><b id="cam-res">—</b></div>
+      <div class="row"><span data-i18n="cam.row.detect">识别</span><b id="cam-detect">—</b></div>
+      <div class="row"><span data-i18n="cam.row.send">下发</span><b id="cam-send">—</b></div>
+    </div>
+  </div>
+
+  <pre class="track-out" id="track-out"></pre>
+</section>
+
+<footer>
+  <span class="muted" data-i18n-html="footer.text"></span>
+</footer>
+
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+<script>
+// tracking.js 是 ES 模块，一旦它加载失败，按钮的 onclick 就永远不会被绑上，
+// 表现是「点了没反应」。这里兜住，把原因显示出来。
+window.addEventListener("error", (e) => {
+  const el = e.target;
+  if (el && el.tagName === "SCRIPT" && /tracking|vision_bundle/.test(el.src || "")) {
+    const t = document.getElementById("track-out");
+    if (t) t.textContent = window.I18N.t("cam.scriptFailed", { src: el.src || "" });
+  }
+}, true);
+</script>
+<script type="module" src="tracking.js"></script>
+</body>
+</html>
