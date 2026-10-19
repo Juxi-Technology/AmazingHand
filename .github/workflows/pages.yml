@@ -1,0 +1,50 @@
+name: Deploy Amazinghand-web-io to Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Amazinghand-web-io/**"
+      - "Amazinghand-web/web/mediapipe/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+
+      # 只发布纯静态部分：IO 版本身 + 它共用的 MediaPipe 资源。
+      # 站点根下保留同样的相对路径，页面里 ../Amazinghand-web/web/mediapipe 才能取到。
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -r Amazinghand-web-io _site/Amazinghand-web-io
+          mkdir -p _site/Amazinghand-web/web
+          cp -r Amazinghand-web/web/mediapipe _site/Amazinghand-web/web/mediapipe
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
