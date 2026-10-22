@@ -41,7 +41,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-WEB_DIR = ROOT / "web"
+WEB_DIR = ROOT.parent / "Amazinghand-web-io"      # 前端只有一份，Python 版直接复用
 CONFIG_PATH = ROOT / "config.json"
 LOG_PATH = ROOT / "server.log"
 
@@ -309,19 +309,23 @@ class WebHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def send_head(self):
-        """index.html 里的 js/css 自动带版本号。
+        """index.html 里的 js/css 自动带版本号，并注入后端标记。
 
         双保险：即使浏览器已经缓存过旧文件，改完代码刷新也会拿到新的。
         版本号取这几个文件里最新的 mtime。
+        注入 AH_BACKEND="ws" 让同一份前端改用 WebSocket，而不是页面内的 Web Serial。
         """
         if self.path.split("?")[0] in ("/", "/index.html"):
             try:
                 idx = WEB_DIR / "index.html"
                 body = idx.read_bytes()
-                assets = ("index.html", "app.js", "tracking.js", "style.css")
+                assets = ("index.html", "app.js", "tracking.js", "style.css",
+                          "i18n.js", "io.js", "ws.js")
                 ver = str(int(max((WEB_DIR / a).stat().st_mtime for a in assets)))
-                body = body.replace(b'.js"', ('.js?v=%s"' % ver).encode())
-                body = body.replace(b'.css"', ('.css?v=%s"' % ver).encode())
+                body = body.replace(b".js\"", (".js?v=%s\"" % ver).encode())
+                body = body.replace(b".css\"", (".css?v=%s\"" % ver).encode())
+                body = body.replace(b"<head>",
+                                    b'<head>\n<script>window.AH_BACKEND = "ws";</script>', 1)
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))

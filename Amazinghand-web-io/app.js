@@ -30,8 +30,17 @@ const state = {
 
 /* ------------------------------------------------------------ 连接 */
 
+/* 传输层二选一：
+ *   - 页面由 server.py 提供时，服务端在 index.html 里注入 AH_BACKEND="ws"，走 WebSocket
+ *   - 静态托管（GitHub Pages / 本地静态服务器）时，走 io.js 的 Web Serial
+ * 两者的消息协议完全一致，下面的逻辑不区分。 */
+function backend() {
+  if (window.AH_BACKEND === "ws" && window.AH_WS) return window.AH_WS;
+  return window.AHIO;
+}
+
 function connect() {
-  AHIO.init({ onMessage: handle });
+  backend().init({ onMessage: handle });
 }
 
 function setConn(ok) {
@@ -41,7 +50,7 @@ function setConn(ok) {
 }
 
 function send(obj) {
-  return AHIO.send(obj);
+  return backend().send(obj);
 }
 
 /* ------------------------------------------------------------ 收消息 */
@@ -268,7 +277,7 @@ function renderPorts(p) {
   sel.innerHTML = "";
   if (p.dry_run) {
     const o = document.createElement("option");
-    o.value = ""; o.textContent = t("port.dryRun");
+    o.value = ""; o.textContent = t(isServer() ? "port.dryRunServer" : "port.dryRun");
     sel.appendChild(o);
     sel.disabled = true;
   } else if (!ports.length) {
@@ -295,10 +304,10 @@ function renderPorts(p) {
   el("btn-port-connect").textContent = t(connected ? "port.reconnect" : "port.connect");
   el("btn-port-disconnect").disabled = !connected;
 
-  if (p.dry_run) setPortState(t("port.dryRunHint"));
+  if (p.dry_run) setPortState(t(isServer() ? "port.dryRunHintServer" : "port.dryRunHint"));
   else if (connected) setPortState(t("port.connected", { port: cur }));
   else if (ports.length) setPortState(t("port.pick"));
-  else setPortState(t("port.plugIn"));
+  else setPortState(t(isServer() ? "port.plugInServer" : "port.plugIn"));
 }
 
 function bindPort() {
@@ -385,5 +394,18 @@ window.I18N.onChange(() => {
   if (state.port) renderPorts(state.port);
 });
 
+/* Python 服务端模式下串口列表由服务端扫描，"添加串口…"应改叫"刷新" */
+const isServer = () => window.AH_BACKEND === "ws" && !!window.AH_WS;
+
+function applyBackendLabels() {
+  if (!isServer()) return;
+  const btn = el("btn-port-refresh");
+  btn.setAttribute("data-i18n", "port.refreshServer");
+  btn.setAttribute("data-i18n-title", "port.refreshTitleServer");
+  btn.textContent = t("port.refreshServer");
+  btn.title = t("port.refreshTitleServer");
+}
+
+applyBackendLabels();
 bind();
 connect();

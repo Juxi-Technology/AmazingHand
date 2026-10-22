@@ -1,8 +1,9 @@
 AmazingHand 网页控制 —— 第三方组件与署名
 Third-party components and attribution
 
-本仓库的原创代码（server.py、web/app.js、web/tracking.js、web/index.html、
-web/style.css、tools/）由 Juxi Technology 编写。
+本仓库的原创代码（server.py、Amazinghand-web-io/ 下的前端 app.js、
+tracking.js、index.html、style.css、io.js、ws.js、i18n.js、tools/）由
+Juxi Technology 编写。前端只有一份，Python 服务端直接复用它。
 
 本仓库另外包含或派生了以下第三方作品。它们的版权归各自权利人所有，
 按各自的许可条款使用。
@@ -43,7 +44,7 @@ web/style.css、tools/）由 Juxi Technology 编写。
 
 即这些文件是 Google 官方发行物的原样拷贝，未经修改。
 
-如需改用官方 CDN，删除 web/mediapipe/ 并把 web/tracking.js 里的路径改回：
+如需改用官方 CDN，删除 web/mediapipe/ 并把 Amazinghand-web-io/tracking.js 里的路径改回：
 
     https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm
     https://storage.googleapis.com/mediapipe-models/hand_landmarker/...

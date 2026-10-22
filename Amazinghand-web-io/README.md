@@ -1,22 +1,23 @@
 # Amazinghand-web-io
 
-**TL;DR** — the same UI as [`../Amazinghand-web/`](../Amazinghand-web/), but the serial backend runs **inside the browser** (Web Serial API) instead of `server.py`. There is no Python, no WebSocket and no local install: publish this folder as static files (e.g. GitHub Pages) and anyone with the board plugged in can open the link, grant port access once, and drive the hand.
+**TL;DR** — this is the **only** front-end in the repository. By default the serial backend runs **inside the browser** (Web Serial API); when the page is served by [`../Amazinghand-web/server.py`](../Amazinghand-web/server.py) it switches to WebSocket automatically (the server injects `AH_BACKEND = "ws"`). No Python and no install are needed for the static mode: publish this folder and anyone with the board plugged in can open the link, grant port access once, and drive the hand.
 
-用浏览器**直接**控制 AmazingHand：和 `../Amazinghand-web/` 是同一套界面，但后端的串口部分搬进了网页（Web Serial API），所以整个站点可以是纯静态的 —— 没有 Python、没有 WebSocket、不用在本机装任何东西。
+用浏览器**直接**控制 AmazingHand。前端只有这一份：默认由页面内的 `io.js` 走 Web Serial；页面如果由 [`../Amazinghand-web/server.py`](../Amazinghand-web/server.py) 提供，则自动改用 WebSocket（服务端会在页面里注入 `AH_BACKEND = "ws"`），串口交给 Python 端。静态模式不需要 Python、不需要 WebSocket、不用在本机装任何东西。
 
 > 需要 **Chrome / Edge**（桌面版）。Firefox 和 Safari 没有 Web Serial，打开后会进入只读模式：界面和摄像头可用，但舵机不动。
 
 ## 和 Python 版的区别
 
-| | `Amazinghand-web/` | `Amazinghand-web-io/`（本目录） |
+| | `Amazinghand-web/`（Python 服务端） | `Amazinghand-web-io/`（本目录，静态） |
 |---|---|---|
+| 前端 | **同一个目录**（server.py 把它当静态根） | 本目录 |
 | 后端 | `server.py`：HTTP + WebSocket + rustypot | 页面内的 `io.js`，直连串口 |
 | 运行方式 | 本机装 Python 依赖后跑脚本 | 打开网页即可（HTTPS 或 localhost） |
 | 串口选择 | 列出本机所有串口 | 浏览器弹窗授权（只会记得授权过的设备） |
 | 浏览器支持 | 任意现代浏览器 | **仅 Chromium 系**（Chrome / Edge） |
 | 硬件要求 | 无 | 必须是安全上下文：`https://` 或 `localhost` |
 
-界面、`config.json`、姿态库、换算公式、限位与急停逻辑**完全一致**，两边可以并存。
+界面、`config.json`、姿态库、换算公式、限位与急停逻辑只有一份实现，两种后端共用。
 
 ## 本地运行
 
@@ -34,15 +35,13 @@ python -m http.server 8099
 
 > CH340/CH343 驱动：Windows 10/11 一般自动装好；如果弹窗里看不到设备，先确认设备管理器里出现了 COM 口。
 
-## 部署到 GitHub Pages
+## 在线地址
 
-仓库根已带工作流 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml)：它把本目录和共用的 MediaPipe 资源一起发布。
+<https://juxi-technology.github.io/AmazingHand/Amazinghand-web-io/>
 
-1. 仓库 **Settings → Pages → Source** 选 **GitHub Actions**
-2. 推到 `main` 后工作流自动发布
-3. 访问 `https://<owner>.github.io/AmazingHand/Amazinghand-web-io/`
+发布由仓库根的 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) 负责，它把本目录与共用的 MediaPipe 资源一起上传。
 
-MediaPipe 资源（约 42 MB）没有在仓库里存第二份：`tracking.js` 会先找 `./mediapipe/`，找不到再用 `../Amazinghand-web/web/mediapipe/`。工作流就是按这个相对路径摆好的。
+MediaPipe 资源（约 42 MB）没有在仓库里存第二份：`tracking.js` 会先找 `./mediapipe/`，找不到再用 `../Amazinghand-web/web/mediapipe/`。
 
 ## 串口协议（为什么能直接驱动舵机）
 
@@ -72,7 +71,8 @@ CHECKSUM = ~(ID + LEN + INST + ΣPARAM) & 0xFF
 | 文件 | 作用 |
 |---|---|
 | `io.js` | 页面内后端：配置加载、姿态换算、SCS0009 协议、Web Serial 串口管理、命令集 |
-| `app.js` | 界面逻辑（与 WebSocket 版一致，只换了传输层） |
+| `ws.js` | 传输层：页面由 `server.py` 提供时改走 WebSocket（接口与 `io.js` 相同） |
+| `app.js` | 界面逻辑（两种后端共用，不区分串口在哪一端） |
 | `tracking.js` | 摄像头互动遥控：MediaPipe 手部关键点 → 4 根手指（资源路径可解析） |
 | `i18n.js` | 中英文案 |
 | `config.json` | 舵机映射 / 姿态库 / 限位 / 摄像头参数（与 Python 版同一个文件） |

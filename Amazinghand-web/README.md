@@ -30,6 +30,10 @@ python server.py --no-connect   # recommended: start the server, pick the port i
 
 Then open **http://localhost:8000** in a browser.
 
+> The page itself lives in [`../Amazinghand-web-io/`](../Amazinghand-web-io/): `server.py` serves that folder
+> and injects `AH_BACKEND = "ws"`, so the same front-end talks to this server over WebSocket instead of
+> Web Serial. Edit the UI there — there is no second copy in this folder.
+
 ### Picking the serial port in the page
 
 The top of the page has a port bar:
