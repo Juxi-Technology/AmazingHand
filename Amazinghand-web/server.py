@@ -42,7 +42,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 WEB_DIR = ROOT.parent / "Amazinghand-web-io"      # 前端只有一份，Python 版直接复用
-CONFIG_PATH = ROOT / "config.json"
+CONFIG_PATH = WEB_DIR / "config.json"             # 配置文件同样只留一份，两种后端共用
 LOG_PATH = ROOT / "server.log"
 
 WS_HOST = "0.0.0.0"

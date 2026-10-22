@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CONFIG = ROOT / "config.json"
+CONFIG = ROOT.parent / "Amazinghand-web-io" / "config.json"   # 与前端共用同一份配置
 
 
 def detect_port():
