@@ -15,13 +15,15 @@ This repository gathers the original mechanical design and firmware from the [Po
 | **`AmazingHand-main/`** | Original design: STL/STEP CAD files, Arduino & Python examples, demos (control, simulation, hand tracking), assembly and 3D-printing guides, BOM | [English](AmazingHand-main/README.md) · [中文](AmazingHand-main/README_CN.md) |
 | **`AmazingHandControl/`** | Python control tools: Tkinter GUI and CLI for calibration, pose presets, sequences and live servo control | [English](AmazingHandControl/README.md) · [中文](AmazingHandControl/README_CN.md) |
 | **`SCS0009_ServoController/`** | SCS0009 servo debug tool: PySide6 GUI to scan the bus, read and write all 44 registers, change baud rate, factory reset, and back up parameters as `.xdat` | [English](SCS0009_ServoController/README.md) · [中文](SCS0009_ServoController/README_CN.md) |
-| **`Amazinghand-web/`** | Browser control: 8 servo sliders, 19 preset poses, and camera teleop with MediaPipe running entirely in the page — left or right hand, bilingual UI, tutorials in 11 languages | [English](Amazinghand-web/README.md) · [中文](Amazinghand-web/tutorials/zh-hans/README.md) |
+| **`Amazinghand-web/`** | Browser control: 8 servo sliders, 19 preset poses, and camera teleop with MediaPipe running entirely in the page — left or right hand, bilingual UI, tutorials in 11 languages; supports both SCS0009 bus servos and PWM servos | [English](Amazinghand-web/README.md) · [中文](Amazinghand-web/tutorials/zh-hans/README.md) |
+| **`AmazingHand-PWM/`** | PWM servo edition: ESP32-S3 firmware (ESP-IDF), Tkinter GUI, MediaPipe hand tracking, serial test tool, complete Chinese/English documentation | [English](AmazingHand-PWM/README.md) · [中文](AmazingHand-PWM/README_CN.md) |
 
 ## 🚀 Getting started
 
 | What you want to do | Where to go |
 |---------------------|-------------|
 | Control the hand from a browser — sliders, preset poses, camera teleop | [`Amazinghand-web/`](Amazinghand-web/README.md) — `pip install -r requirements.txt`, then `python server.py --no-connect` and open <http://localhost:8000> |
+| Use the PWM servo edition — ESP32-S3 driving 8 PWM channels | [`AmazingHand-PWM/`](AmazingHand-PWM/README.md) — flash the firmware, then use `tools/hand_gui.py` or the web app (select the PWM driver); see the module docs |
 | Run the desktop demos — simulation, hand tracking, servo control | [`AmazingHand-main/Demo/`](AmazingHand-main/Demo/README.md) — one-click deployment scripts for [Windows](AmazingHand-main/Demo/Windows_Deploy_Scripts/), [Linux](AmazingHand-main/Demo/Linux_Deploy_Scripts/) and [macOS](AmazingHand-main/Demo/Mac_Deploy_Scripts/) |
 | Calibrate servos or script poses offline | [`AmazingHandControl/`](AmazingHandControl/README.md) · [`SCS0009_ServoController/`](SCS0009_ServoController/README.md) |
 
@@ -34,7 +36,13 @@ Hardware needed: the assembled hand, an external 5 V / 2 A supply, and a USB ser
 - Serial bus adapter, or an Arduino with a Feetech TTL Linker
 - 3D-printed parts — see the [BOM](AmazingHand-main/README.md#bom-bill-of-materials)
 
-Each finger is driven by a parallel mechanism: two SCS0009 servos move it in flexion/extension and abduction/adduction.
+**PWM servo edition** (see [`AmazingHand-PWM/`](AmazingHand-PWM/README.md)):
+
+- 8 × PWM servos — firmware is calibrated for PTK 7452 MG-D digital servos (333 Hz); 50 Hz analog servos such as SG90 are not drop-in replacements
+- ESP32-S3 development board + PWM servo breakout board
+- External 5 V / 3 A supply, common ground with the ESP32
+
+Each finger is driven by a parallel mechanism: two servos move it in flexion/extension and abduction/adduction.
 
 ## 📖 Documentation
 
@@ -48,6 +56,7 @@ Each finger is driven by a parallel mechanism: two SCS0009 servos move it in fle
 - Software: [Apache License 2.0](AmazingHand-main/LICENSE)
 - Mechanical design: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - `SCS0009_ServoController/`: [MIT](SCS0009_ServoController/LICENSE)
+- `AmazingHand-PWM/`: origin and third-party components in [NOTICE](AmazingHand-PWM/NOTICE.md)
 - Third-party components bundled with `Amazinghand-web/` (MediaPipe, …): see [its NOTICE](Amazinghand-web/NOTICE.md)
 
 Based on [AmazingHand](https://github.com/pollen-robotics/AmazingHand) by Pollen Robotics.

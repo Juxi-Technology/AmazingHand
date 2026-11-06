@@ -47,6 +47,7 @@ h2{font-size:14px; margin:22px 0 10px; color:var(--muted); font-weight:600}
   font-family:ui-monospace,monospace;
 }
 .port-bar select:disabled{opacity:.6}
+.port-bar select.driver-select{min-width:150px; max-width:220px}
 .port-bar button{
   background:transparent; border:1px solid var(--line); color:var(--fg);
   padding:6px 14px; border-radius:8px; cursor:pointer; font-size:13px; white-space:nowrap;

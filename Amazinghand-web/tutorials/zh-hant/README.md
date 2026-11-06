@@ -25,6 +25,7 @@ python server.py --no-connect   # 推薦：先啟動伺服器，在網頁中選�
 # python server.py                # 自動偵測序列埠並連線
 # python server.py --port COM9    # 指定序列埠
 # python server.py --hand left    # 只啟用左手
+# python server.py --driver pwm   # 使用 ESP32-S3 PWM 伺服馬達版本
 # python server.py --dry-run      # 完全不開序列埠，只驗證介面
 ```
 
@@ -32,12 +33,13 @@ python server.py --no-connect   # 推薦：先啟動伺服器，在網頁中選�
 
 ### 在網頁中選擇序列埠
 
-頁面頂端有一排序列埠工具列：
+頁面頂端有一排工具列，先選驅動，再選序列埠：
 
 ```
-Port  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
+驅動  [SCS0009 匯流排 ▾]  序列埠  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
 ```
 
+- 驅動下拉選單：**SCS0009 匯流排**（官方匯流排伺服馬達，預設）或 **PWM（ESP32-S3）**（見下文 [PWM 伺服馬達版本](#pwm-伺服馬達版本esp32-s3-直驅)）
 - 下拉選單列出本機上的每一個序列埠。常見的 USB 轉序列埠晶片（CH34x / CP210x / FTDI …）會標示 **★** 並排在最前面
 - **Refresh** 會重新掃描（插上板子後請使用）
 - **Connect** 會開啟所選的序列埠；連線後手會立刻回到中位
@@ -58,6 +60,112 @@ python tools/scan_servos.py --port COM9
 ```
 
 把 COM9 換成你實際使用的埠。
+
+> 這個工具只適用於 **SCS0009 匯流排伺服馬達**。PWM 版本的接線檢查請見下文，或使用 `AmazingHand-PWM/tools/serial_test.py`。
+
+---
+
+## PWM 伺服馬達版本（ESP32-S3 直驅）
+
+網頁同時支援兩種硬體：官方 SCS0009 匯流排伺服馬達，以及 ESP32-S3 + 8 路 PWM 伺服馬達。PWM 版由 ESP32-S3 直接產生 8 路 PWM 訊號，電腦只透過序列埠發送指令，**不需要匯流排驅動板**。
+
+### 硬體與接線
+
+| 項目 | 型號 |
+|------|------|
+| 主控 | ESP32-S3 開發板（優信 YX-ESP32-S3 或同類） |
+| 伺服馬達 | 8 個 PWM 伺服馬達 —— 韌體依 **PTK 7452 MG-D 數位伺服馬達（333 Hz）** 標定 |
+| 轉接板 | PWM 伺服馬達轉接板 |
+| 電源 | 5 V / 3 A，轉接板與 ESP32 共地 |
+
+PWM 通道 → GPIO：
+
+| 通道 | GPIO | 關節 | 通道 | GPIO | 關節 |
+|------|------|------|------|------|------|
+| PWM1 | 4 | 食指關節 1 | PWM5 | 15 | 無名指關節 1 |
+| PWM2 | 5 | 食指關節 2 | PWM6 | 16 | 無名指關節 2 |
+| PWM3 | 6 | 中指關節 1 | PWM7 | 17 | 拇指關節 1 |
+| PWM4 | 7 | 中指關節 2 | PWM8 | 18 | 拇指關節 2 |
+
+> ⚠️ SG90 等常見的 50 Hz 類比伺服馬達不能直接替換 333 Hz 韌體。若要更換伺服馬達型號，必須同時修改 `LEDC_FREQ` 與脈寬標定並重新驗證。
+
+### 燒錄韌體
+
+韌體原始碼與預先編譯的檔案都位於 [`AmazingHand-PWM/`](../../../AmazingHand-PWM/README.md)：
+
+```bash
+# 方式一：ESP-IDF（v5.x / v6.x）
+cd AmazingHand-PWM/firmware/AmazingHand_Serial
+idf.py set-target esp32s3
+idf.py build
+idf.py -p COM3 flash monitor
+
+# 方式二：預先編譯的 bin（需要 esptool）
+python -m esptool --chip esp32s3 -p COM3 -b 460800 write_flash 0x0 \
+  AmazingHand-PWM/firmware/prebuilt/amazinghand_pwm.bin
+```
+
+上電後序列埠會印出：
+
+```
+AmazingHand Serial Control Ready (ESP-IDF)
+Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
+```
+
+### 網頁連線
+
+1. 頂端的 **Driver** 下拉選單選 **PWM (ESP32-S3)**
+2. 點 **Add port…**，選取 ESP32-S3 的 USB 序列埠
+3. 點 **Connect**：頁面會自動握手（NOP）、發送左右手選擇並回到中位
+4. 之後用滑桿、預設姿態、攝影機遙控控制；手指標題會顯示 **CH 1/2 …**（PWM 通道號）
+
+### 與 SCS0009 版的差異
+
+| 項目 | SCS0009 匯流排版 | PWM 版 |
+|------|----------------|--------|
+| 序列埠鮑率 | 1,000,000 | **115,200** |
+| 驅動板 | USB 匯流排驅動板 | ESP32-S3 + PWM 轉接板 |
+| 力矩 | 可開啟／釋放 | **無**（韌體沒有力矩指令，按鈕會隱藏） |
+| 急停 | 鬆開全部力矩 | 發送 `0xFF` 中止手勢，伺服馬達仍通電保持位置 |
+| 速度 | 支援速度參數 | 直驅幀沒有速度參數 |
+| 左右手 | 不同伺服馬達 ID | 同一組通道，發送 `0xF1` 切換（主要影響韌體手勢；網頁姿態使用各自手的映射） |
+
+### 角度校正
+
+網頁把姿態值換算成 8 路 0–180° 角度，預設公式：
+
+```
+angle = 90 + dir × scale × 姿態值 + offset
+```
+
+- 每根手指的第一個通道 `dir = -1`，第二個通道 `dir = +1`
+- 預設 `scale = 1`、`offset = 0`，即直接鏡像伺服馬達軸角度
+- 左手先依 `mirror_pose` 交換每根手指的兩個姿態值
+
+如果實機方向相反或中位偏移了，請編輯 [`config.json`](../../../Amazinghand-web-io/config.json) 的 `pwm.calibration`：
+
+```jsonc
+"pwm": {
+  "calibration": {
+    "right": {
+      "pointer": { "scale": 1.0, "offset_deg": [0, 0] }
+    }
+  }
+}
+```
+
+- 方向相反：把對應手指的 `scale` 改為 `-1`
+- 中位偏移：調整 `offset_deg`（兩個通道分別調整）
+- 逐指步驟：回到中位 → 單獨拖動一根手指 → 觀察方向／中位 → 修改 `scale`／`offset_deg` → 重新載入頁面重試
+
+### 常見問題
+
+- **連線失敗／ESP32 無回應**：確認鮑率是 115200、選的是 ESP32 的 COM 埠、5 V/3 A 供電與共地；開啟序列埠後 ESP32 可能會重置，頁面會自動重試 NOP
+- **伺服馬達不動或抖動**：先確認伺服馬達是 333 Hz 數位伺服馬達（PTK 7452 MG-D 或同類），電源足夠；SG90 需修改韌體
+- **方向相反**：把對應手指的 `scale` 改為 `-1`
+- **中位不對**：調整對應通道的 `offset_deg`
+- **提示「忙碌（手勢執行中）」**：韌體正在執行內建手勢，請等它完成或按急停（`0xFF`）
+- **掃描伺服馬達**：`tools/scan_servos.py` 只適用於 SCS0009；PWM 請使用 `AmazingHand-PWM/tools/serial_test.py` 或網頁
 
 ---
 

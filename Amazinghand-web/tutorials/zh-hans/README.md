@@ -24,6 +24,7 @@ python server.py --no-connect   # 推荐：先起服务，串口在网页里选�
 # python server.py                # 自动探测串口并连接
 # python server.py --port COM9    # 指定串口
 # python server.py --hand left    # 只启用左手
+# python server.py --driver pwm   # 使用 ESP32-S3 PWM 舵机版本
 # python server.py --dry-run      # 完全不开串口，只验证界面
 ```
 
@@ -31,16 +32,17 @@ python server.py --no-connect   # 推荐：先起服务，串口在网页里选�
 
 ### 在网页里选串口
 
-页面顶部有一排串口工具条：
+页面顶部有一排工具条，先选驱动，再选串口：
 
 ```
-串口  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [刷新]  [连接]  [断开]  已连接 COM3
+驱动  [SCS0009 总线 ▾]  串口  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [刷新]  [连接]  [断开]  已连接 COM3
 ```
 
+- 驱动下拉：**SCS0009 总线**（官方总线舵机，默认）或 **PWM（ESP32-S3）**（见下文 [PWM 舵机版本](#pwm-舵机版本esp32-s3-直驱)）
 - 下拉框列出本机所有串口，常见 USB 转串口芯片（CH34x / CP210x / FTDI 等）标 **★** 并排在最前
 - 点 **刷新** 重新扫描（插拔板子后用）
 - 点 **连接** 连接选中的串口；连上后会自动回中位
-- 点 **断开** 先松开力矩再断开，舵机不会僵在原位
+- 点 **断开** 先松开力矩再断开，舵机不会僵在原位（PWM 版没有力矩命令，见下文说明）
 - 换串口直接选新的点「连接」即可，旧口会自动关掉
 
 > **`--no-connect` 是配合这个流程用的**：启动时只起服务、完全不碰串口，
@@ -57,6 +59,112 @@ python tools/scan_servos.py --port COM9
 ```
 
 COM9改为自己实际的端口号
+
+> 这个工具只适用于 **SCS0009 总线舵机**。PWM 版本的接线检查见下文，或用 `AmazingHand-PWM/tools/serial_test.py`。
+
+---
+
+## PWM 舵机版本（ESP32-S3 直驱）
+
+网页同时支持两种硬件：官方 SCS0009 总线舵机，以及 ESP32-S3 + 8 路 PWM 舵机。PWM 版由 ESP32-S3 直接产生 8 路 PWM 信号，电脑只通过串口发指令，**不需要总线驱动板**。
+
+### 硬件与接线
+
+| 项目 | 型号 |
+|------|------|
+| 主控 | ESP32-S3 开发板（优信 YX-ESP32-S3 或同类） |
+| 舵机 | 8 个 PWM 舵机——固件按 **PTK 7452 MG-D 数字舵机（333 Hz）** 标定 |
+| 转接板 | PWM 舵机转接板 |
+| 电源 | 5 V / 3 A，转接板与 ESP32 共地 |
+
+PWM 通道 → GPIO：
+
+| 通道 | GPIO | 关节 | 通道 | GPIO | 关节 |
+|------|------|------|------|------|------|
+| PWM1 | 4 | 食指关节 1 | PWM5 | 15 | 无名指关节 1 |
+| PWM2 | 5 | 食指关节 2 | PWM6 | 16 | 无名指关节 2 |
+| PWM3 | 6 | 中指关节 1 | PWM7 | 17 | 拇指关节 1 |
+| PWM4 | 7 | 中指关节 2 | PWM8 | 18 | 拇指关节 2 |
+
+> ⚠️ SG90 等常见 50 Hz 模拟舵机不能直接替换 333 Hz 固件。要换舵机型号，必须同时修改 `LEDC_FREQ` 和脉宽标定并重新验证。
+
+### 烧录固件
+
+固件源码和预编译文件都在 [`AmazingHand-PWM/`](../../../AmazingHand-PWM/README_CN.md)：
+
+```bash
+# 方式一：ESP-IDF（v5.x / v6.x）
+cd AmazingHand-PWM/firmware/AmazingHand_Serial
+idf.py set-target esp32s3
+idf.py build
+idf.py -p COM3 flash monitor
+
+# 方式二：预编译 bin（需要 esptool）
+python -m esptool --chip esp32s3 -p COM3 -b 460800 write_flash 0x0 \
+  AmazingHand-PWM/firmware/prebuilt/amazinghand_pwm.bin
+```
+
+上电后串口会打印：
+
+```
+AmazingHand Serial Control Ready (ESP-IDF)
+Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
+```
+
+### 网页连接
+
+1. 顶部“驱动”下拉选 **PWM（ESP32-S3）**
+2. 点 **添加串口…**，选中 ESP32-S3 的 USB 串口
+3. 点 **连接**：页面会自动握手（NOP）、发送左右手选择并回中位
+4. 之后用滑块、预设姿态、摄像头遥操作控制；手指标题显示 **CH 1/2 …**（PWM 通道号）
+
+### 和 SCS0009 版的差异
+
+| 项目 | SCS0009 总线版 | PWM 版 |
+|------|----------------|--------|
+| 串口波特率 | 1,000,000 | **115,200** |
+| 驱动板 | USB 总线驱动板 | ESP32-S3 + PWM 转接板 |
+| 力矩 | 可开启/释放 | **无**（固件没有力矩命令，按钮会隐藏） |
+| 急停 | 松开全部力矩 | 发送 `0xFF` 中止手势，舵机仍通电保持位置 |
+| 速度 | 支持速度参数 | 直驱帧无速度参数 |
+| 左右手 | 不同舵机 ID | 同一组通道，发 `0xF1` 切换（主要影响固件手势；网页姿态用各自手的映射） |
+
+### 角度标定
+
+网页把姿态值换算成 8 路 0–180° 角度，默认公式：
+
+```
+angle = 90 + dir × scale × 姿态值 + offset
+```
+
+- 每根手指第一个通道 `dir = -1`，第二个通道 `dir = +1`
+- 默认 `scale = 1`、`offset = 0`，即直接镜像舵机轴角度
+- 左手先按 `mirror_pose` 交换每指两个姿态值
+
+如果实机方向相反或中位偏了，编辑 [`config.json`](../../../Amazinghand-web-io/config.json) 的 `pwm.calibration`：
+
+```jsonc
+"pwm": {
+  "calibration": {
+    "right": {
+      "pointer": { "scale": 1.0, "offset_deg": [0, 0] }
+    }
+  }
+}
+```
+
+- 方向相反：把对应指的 `scale` 改为 `-1`
+- 中位偏移：调 `offset_deg`（两个通道分别调）
+- 逐指步骤：回中位 → 单独拖动一根手指 → 观察方向/中位 → 改 `scale`/`offset_deg` → 刷新页面重试
+
+### 常见问题
+
+- **连接失败 / ESP32 无响应**：确认波特率是 115200、选的是 ESP32 的 COM 口、5 V/3 A 供电和共地；打开串口后 ESP32 可能复位，页面会自动重试 NOP
+- **舵机不动或抖动**：先确认舵机是 333 Hz 数字舵机（PTK 7452 MG-D 或同类），电源足够；SG90 需改固件
+- **方向反了**：改对应指的 `scale` 为 `-1`
+- **中位不对**：调对应通道的 `offset_deg`
+- **提示“忙（手势执行中）”**：固件正在执行内置手势，等它完成或点急停（`0xFF`）
+- **扫描舵机**：`tools/scan_servos.py` 只适用于 SCS0009；PWM 用 `AmazingHand-PWM/tools/serial_test.py` 或网页
 
 ---
 

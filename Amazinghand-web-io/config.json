@@ -6,6 +6,36 @@
   "//4": "  2) servo_deg = (id 为奇数 ? +1 : -1) × (姿态值 - angle_offset_deg)",
   "//5": "  右手 angle_offset_deg = 0，左手 = -35.16（舵机臂错开半格）",
   "//6": "姿态数组顺序固定为 [无名指, 中指, 食指, 拇指]，每根手指 2 个值，与源文件一致。",
+  "driver": "scs0009",
+  "//driver": "默认驱动：scs0009（官方总线舵机）或 pwm（ESP32-S3 直驱 PWM）。网页里可切换。",
+  "pwm": {
+    "//": "PWM 舵机版本（ESP32-S3 直驱）。angle = middle_deg + dir × scale × 姿态值 + offset_deg",
+    "//dir": "每指第一个通道 dir=-1，第二个通道 dir=+1；mirror_pose 为真时先交换每指两个姿态值。",
+    "//scale": "默认 1.0 = 直接镜像舵机轴角度；方向相反时取负，行程不足/过大时调大小。",
+    "//offset": "offset_deg 是每指两个通道的安装角补偿，顺序 [第一个通道, 第二个通道]。",
+    "baudrate": 115200,
+    "middle_deg": 90,
+    "channels": {
+      "pointer": [1, 2],
+      "middle": [3, 4],
+      "ring": [5, 6],
+      "thumb": [7, 8]
+    },
+    "calibration": {
+      "right": {
+        "pointer": { "scale": 1.0, "offset_deg": [0, 0] },
+        "middle": { "scale": 1.0, "offset_deg": [0, 0] },
+        "ring": { "scale": 1.0, "offset_deg": [0, 0] },
+        "thumb": { "scale": 1.0, "offset_deg": [0, 0] }
+      },
+      "left": {
+        "pointer": { "scale": 1.0, "offset_deg": [0, 0] },
+        "middle": { "scale": 1.0, "offset_deg": [0, 0] },
+        "ring": { "scale": 1.0, "offset_deg": [0, 0] },
+        "thumb": { "scale": 1.0, "offset_deg": [0, 0] }
+      }
+    }
+  },
   "serial": {
     "//": "留空则自动探测；也可用 --port 或环境变量覆盖",
     "port": "",

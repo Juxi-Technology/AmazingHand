@@ -25,6 +25,7 @@ python server.py --no-connect   # 권장: 서버만 먼저 띄우고 포트는 �
 # python server.py                # 시리얼 포트를 자동 감지하고 연결
 # python server.py --port COM9    # 특정 포트 지정
 # python server.py --hand left    # 왼손만 활성화
+# python server.py --driver pwm   # ESP32-S3 PWM 서보 버전 사용
 # python server.py --dry-run      # 시리얼 포트를 전혀 열지 않고 UI만
 ```
 
@@ -32,12 +33,13 @@ python server.py --no-connect   # 권장: 서버만 먼저 띄우고 포트는 �
 
 ### 페이지에서 시리얼 포트 선택
 
-페이지 상단에 포트 바가 있습니다:
+페이지 상단에 툴바가 있습니다. 먼저 드라이버를 고르고, 그다음 시리얼 포트를 고르세요:
 
 ```
-Port  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
+드라이버  [SCS0009 버스 ▾]  시리얼 포트  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
 ```
 
+- 드라이버 드롭다운: **SCS0009 버스**(공식 버스 서보, 기본값) 또는 **PWM(ESP32-S3)** — 아래 [PWM 서보 버전](#pwm-서보-버전-esp32-s3-직결-구동)을 참고하세요
 - 드롭다운에 이 컴퓨터의 모든 시리얼 포트가 나열됩니다. 흔한 USB-시리얼 칩(CH34x / CP210x / FTDI …)은 **★** 표시가 붙고 맨 앞에 정렬됩니다
 - **Refresh**는 다시 스캔합니다(보드를 꽂은 뒤 사용하세요)
 - **Connect**는 선택한 포트를 엽니다. 연결되면 곧바로 로봇 손이 중간 위치로 복귀합니다
@@ -58,6 +60,112 @@ python tools/scan_servos.py --port COM9
 ```
 
 COM9를 실제 사용하는 포트로 바꾸세요.
+
+> 이 도구는 **SCS0009 버스 서보**에만 적용됩니다. PWM 버전의 배선 점검은 아래를 보거나 `AmazingHand-PWM/tools/serial_test.py`를 사용하세요.
+
+---
+
+## PWM 서보 버전 (ESP32-S3 직결 구동)
+
+웹 페이지는 두 가지 하드웨어를 동시에 지원합니다: 공식 SCS0009 버스 서보와 ESP32-S3 + 8채널 PWM 서보입니다. PWM 버전은 ESP32-S3가 직접 8채널 PWM 신호를 생성하고, 컴퓨터는 시리얼 포트로 명령만 보내므로 **버스 드라이버 보드가 필요 없습니다**.
+
+### 하드웨어와 배선
+
+| 항목 | 모델 |
+|------|------|
+| 메인 컨트롤러 | ESP32-S3 개발 보드(Youxin YX-ESP32-S3 또는 동급) |
+| 서보 | PWM 서보 8개 — 펌웨어는 **PTK 7452 MG-D 디지털 서보(333 Hz)** 기준으로 캘리브레이션됨 |
+| 어댑터 보드 | PWM 서보 어댑터 보드 |
+| 전원 | 5 V / 3 A, 어댑터 보드와 ESP32는 공통 접지 |
+
+PWM 채널 → GPIO:
+
+| 채널 | GPIO | 관절 | 채널 | GPIO | 관절 |
+|------|------|------|------|------|------|
+| PWM1 | 4 | 검지 관절 1 | PWM5 | 15 | 약지 관절 1 |
+| PWM2 | 5 | 검지 관절 2 | PWM6 | 16 | 약지 관절 2 |
+| PWM3 | 6 | 중지 관절 1 | PWM7 | 17 | 엄지 관절 1 |
+| PWM4 | 7 | 중지 관절 2 | PWM8 | 18 | 엄지 관절 2 |
+
+> ⚠️ SG90 같은 흔한 50 Hz 아날로그 서보는 333 Hz 펌웨어를 그대로 대체할 수 없습니다. 서보 모델을 바꾸려면 `LEDC_FREQ`와 펄스 폭 캘리브레이션을 함께 수정하고 다시 검증해야 합니다.
+
+### 펌웨어 플래싱
+
+펌웨어 소스와 사전 빌드 파일은 모두 [`AmazingHand-PWM/`](../../../AmazingHand-PWM/README.md)에 있습니다:
+
+```bash
+# 방식 1: ESP-IDF (v5.x / v6.x)
+cd AmazingHand-PWM/firmware/AmazingHand_Serial
+idf.py set-target esp32s3
+idf.py build
+idf.py -p COM3 flash monitor
+
+# 방식 2: 사전 빌드 bin (esptool 필요)
+python -m esptool --chip esp32s3 -p COM3 -b 460800 write_flash 0x0 \
+  AmazingHand-PWM/firmware/prebuilt/amazinghand_pwm.bin
+```
+
+전원을 켜면 시리얼 포트에 다음이 출력됩니다:
+
+```
+AmazingHand Serial Control Ready (ESP-IDF)
+Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
+```
+
+### 웹 페이지 연결
+
+1. 상단의 **Driver** 드롭다운에서 **PWM (ESP32-S3)** 선택
+2. **Add port…**를 눌러 ESP32-S3의 USB 시리얼 포트 선택
+3. **Connect**를 누르면 페이지가 자동으로 핸드셰이크(NOP)하고, 왼손/오른손 선택을 보낸 뒤 중간 위치로 복귀합니다
+4. 이후 슬라이더, 프리셋 포즈, 카메라 텔레오퍼레이션으로 제어합니다. 손가락 제목에는 **CH 1/2 …**(PWM 채널 번호)가 표시됩니다
+
+### SCS0009 버전과의 차이
+
+| 항목 | SCS0009 버스 버전 | PWM 버전 |
+|------|----------------|--------|
+| 시리얼 보드레이트 | 1,000,000 | **115,200** |
+| 드라이버 보드 | USB 버스 드라이버 보드 | ESP32-S3 + PWM 어댑터 보드 |
+| 토크 | 켜기/해제 가능 | **없음**(펌웨어에 토크 명령이 없어 버튼이 숨겨짐) |
+| E-stop | 모든 토크 해제 | `0xFF`를 보내 제스처 중단, 서보는 전원이 들어온 채 위치 유지 |
+| 속도 | 속도 파라미터 지원 | 직결 프레임에는 속도 파라미터가 없음 |
+| 왼손/오른손 | 서보 ID가 다름 | 같은 채널 그룹, `0xF1`을 보내 전환(주로 펌웨어 제스처에 영향; 웹 포즈는 각 손의 매핑 사용) |
+
+### 각도 캘리브레이션
+
+웹 페이지는 포즈 값을 8채널 0–180° 각도로 변환합니다. 기본 공식:
+
+```
+angle = 90 + dir × scale × 포즈 값 + offset
+```
+
+- 각 손가락의 첫 번째 채널은 `dir = -1`, 두 번째 채널은 `dir = +1`
+- 기본값은 `scale = 1`, `offset = 0`이며, 서보 축 각도를 그대로 미러링합니다
+- 왼손은 먼저 `mirror_pose`에 따라 손가락마다 두 포즈 값을 교환합니다
+
+실제 방향이 반대이거나 중간 위치가 어긋나면 [`config.json`](../../../Amazinghand-web-io/config.json)의 `pwm.calibration`을 편집하세요:
+
+```jsonc
+"pwm": {
+  "calibration": {
+    "right": {
+      "pointer": { "scale": 1.0, "offset_deg": [0, 0] }
+    }
+  }
+}
+```
+
+- 방향이 반대: 해당 손가락의 `scale`을 `-1`로
+- 중간 위치 오프셋: `offset_deg` 조정(두 채널을 각각 조정)
+- 손가락별 절차: 중간 위치 복귀 → 한 손가락만 따로 드래그 → 방향/중간 위치 확인 → `scale`/`offset_deg` 수정 → 페이지 새로 고침 후 재시도
+
+### 자주 묻는 질문
+
+- **연결 실패 / ESP32 무응답**: 보드레이트가 115200인지, ESP32의 COM 포트를 선택했는지, 5 V/3 A 전원과 공통 접지가 맞는지 확인하세요; 시리얼 포트를 열면 ESP32가 리셋될 수 있으며 페이지가 자동으로 NOP를 재시도합니다
+- **서보가 움직이지 않거나 떨림**: 서보가 333 Hz 디지털 서보(PTK 7452 MG-D 또는 동급)인지, 전원이 충분한지 먼저 확인하세요; SG90은 펌웨어 수정이 필요합니다
+- **방향이 반대**: 해당 손가락의 `scale`을 `-1`로
+- **중간 위치가 어긋남**: 해당 채널의 `offset_deg`를 조정
+- **"바쁨(제스처 실행 중)" 표시**: 펌웨어가 내장 제스처를 실행 중입니다. 완료될 때까지 기다리거나 E-stop을 누르세요(`0xFF`)
+- **서보 스캔**: `tools/scan_servos.py`는 SCS0009에만 적용됩니다; PWM은 `AmazingHand-PWM/tools/serial_test.py` 또는 웹 페이지를 사용하세요
 
 ---
 

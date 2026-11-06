@@ -10,6 +10,9 @@
 (function () {
   "use strict";
 
+  /* 配置加载、姿态换算、串口描述与 pwm.js 共用，见 common.js。 */
+  const C = window.AH_COMMON;
+
   /* ---------------- SCS0009 协议常量 ----------------
    * 与 rustypot 的 servo/feetech/scs0009.rs 一致：
    *   1024 步 / 300°，中位 511，多字节寄存器大端。
@@ -47,34 +50,13 @@
   let emit = () => {};            // 向 app.js 发消息
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const clampPose = (v) =>
-    Math.max(cfg.limits.pose_min_deg, Math.min(cfg.limits.pose_max_deg, Number(v)));
+  const clampPose = (v) => C.clampPose(cfg.limits, v);
 
   /* ---------------- 配置 ---------------- */
 
-  function stripComments(node) {
-    if (Array.isArray(node)) return node.map(stripComments);
-    if (node && typeof node === "object") {
-      const out = {};
-      for (const [k, v] of Object.entries(node)) {
-        if (!k.startsWith("//")) out[k] = stripComments(v);
-      }
-      return out;
-    }
-    return node;
-  }
-
   async function loadConfig() {
-    const res = await fetch("./config.json", { cache: "no-cache" });
-    if (!res.ok) throw new Error(`config.json HTTP ${res.status}`);
-    cfg = stripComments(await res.json());
-
-    hands = {};
-    for (const [k, h] of Object.entries(cfg.hands)) {
-      if (k !== "left" && k !== "right") continue;
-      const servoIds = h.fingers.flatMap((f) => f.ids);
-      hands[k] = { ...h, key: k, servo_ids: servoIds, torque: false };
-    }
+    cfg = await C.loadConfig();
+    hands = C.buildHands(cfg);
     enabled = Object.keys(hands);
     target = enabled[0];
 
@@ -84,27 +66,9 @@
     for (const k of enabled) torqueOn[k] = false;
   }
 
-  /* ---------------- 换算（对齐 server.py / AmazingHandControl） ----------------
-   * 1) mirror_pose 为真时，先交换每根手指两个舵机的值
-   * 2) servo_deg = (ID 奇数 ? +1 : -1) × (姿态值 − angle_offset_deg)
-   */
-  function poseToServoGoals(hand, positions) {
-    const pos = positions.map(Number);
-    if (hand.mirror_pose) {
-      for (let i = 0; i < hand.fingers.length; i++) {
-        const a = i * 2;
-        [pos[a], pos[a + 1]] = [pos[a + 1], pos[a]];
-      }
-    }
-    const goals = [];
-    hand.fingers.forEach((finger, i) => {
-      finger.ids.forEach((id, j) => {
-        const v = pos[i * 2 + j] - hand.angle_offset_deg;
-        goals.push([id, id % 2 === 0 ? -v : v]);
-      });
-    });
-    return goals;
-  }
+  /* ---------------- 换算（对齐 server.py / AmazingHandControl） ---------------- */
+
+  const poseToServoGoals = C.poseToServoGoals;
 
   /* 角度(弧度) → SCS0009 寄存器值；与 rustypot 的 AnglePosition::to_raw 同式 */
   function angleToRaw(rad) {
@@ -205,17 +169,7 @@
 
   /* ---------------- 串口 ---------------- */
 
-  const LIKELY_VIDS = new Set([0x1a86, 0x10c4, 0x0403, 0x067b, 0x2341, 0x2e8a]);
-
-  function describePort(port, index) {
-    const info = port.getInfo ? port.getInfo() : {};
-    const vid = info.usbVendorId;
-    const pid = info.usbProductId;
-    const hex = (n) => (n === undefined ? "????" : n.toString(16).padStart(4, "0"));
-    const name = `USB ${hex(vid)}:${hex(pid)} #${index + 1}`;
-    const likely = vid !== undefined && LIKELY_VIDS.has(vid);
-    return { name, label: likely ? `${name} ★` : name, likely };
-  }
+  const describePort = C.describePort;
 
   async function refreshPorts() {
     if (!navigator.serial) return [];
@@ -319,25 +273,15 @@
     return enabled[0];
   }
 
-  function posePositions(pose, hand) {
-    return pose[hand] || pose.positions;
-  }
+  const posePositions = C.posePositions;
 
   function setPositions(hand, positions) {
     current[hand] = positions.map(Number);
   }
 
   function mergeAngles(hand, angles) {
-    const out = [...current[hand]];
-    hands[hand].fingers.forEach((f, fi) => {
-      const v = angles[f.key];
-      if (Array.isArray(v) && v.length === 2) {
-        out[fi * 2] = Number(v[0]);
-        out[fi * 2 + 1] = Number(v[1]);
-      }
-    });
-    current[hand] = out;
-    return out;
+    current[hand] = C.mergeAngles(hands, current, hand, angles);
+    return current[hand];
   }
 
   async function ensureTorque(hand) {

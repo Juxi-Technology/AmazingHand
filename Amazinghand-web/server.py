@@ -3,25 +3,24 @@
 """AmazingHand 网页控制 —— 后端服务
 
 职责：
-  1. 打开串口，驱动 SCS0009 舵机（rustypot）
-  2. 提供静态文件服务（web/ 目录）
+  1. 打开串口，驱动 SCS0009 总线舵机（rustypot）或 PWM 舵机（ESP32-S3 直驱）
+  2. 提供静态文件服务（Amazinghand-web-io/ 目录）
   3. 通过 WebSocket 接收前端下发的姿态值，换算成舵机目标位置并下发
 
-支持两种模式：左手 / 右手。
+支持两种舵机驱动：
 
-换算公式与 AmazingHandControl 官方实现一致：
+    --driver scs0009   # 官方总线舵机（默认）
+    --driver pwm       # ESP32-S3 + 8 路 PWM 舵机，115200-8N1
+
+SCS0009 换算公式与 AmazingHandControl 官方实现一致：
 
     1) 左手先交换每根手指两个舵机的值     （mirror_pose）
     2) servo_deg = (id 奇数 ? +1 : -1) × (姿态值 - angle_offset_deg)
 
-  angle_offset_deg：右手 0，左手 -35.16（舵机臂错开半格）。
+PWM 换算公式：
 
-用法：
-
-    python server.py                      # 自动探测串口，左右手都启用
-    python server.py --port COM9
-    python server.py --hand left          # 只启用左手
-    python server.py --dry-run            # 不开串口，只验证前后端
+    angle = middle_deg + dir × scale × 姿态值 + offset_deg
+    （每指第一个通道 dir=-1，第二个 dir=+1，默认 middle=90/scale=1/offset=0）
 """
 
 from __future__ import annotations
@@ -129,6 +128,202 @@ def pose_to_servo_goals(hand: HandConfig, positions) -> list[tuple[int, float]]:
     return goals
 
 
+def pose_to_pwm_angles(cfg, hand: HandConfig, positions) -> list[int]:
+    """姿态值(8 个) -> PWM 8 通道角度（0-180）。
+
+    与 common.js 的 poseToPwmAngles 完全一致：
+
+        angle = middle_deg + dir × scale × 姿态值 + offset_deg
+
+    每根手指第一个通道 dir=-1，第二个 dir=+1；mirror_pose 为真时先交换
+    每指两个值。默认 middle=90 / scale=1 / offset=0，直接镜像舵机轴角度。
+    """
+    pwm = cfg.get("pwm") or {}
+    middle = float(pwm.get("middle_deg", 90))
+    channels = pwm.get("channels") or {
+        "pointer": [1, 2], "middle": [3, 4], "ring": [5, 6], "thumb": [7, 8],
+    }
+    calibration = (pwm.get("calibration") or {}).get(hand.key, {})
+
+    pos = [float(x) for x in positions]
+    if hand.mirror_pose:
+        for i in range(len(hand.fingers)):
+            a, b = i * 2, i * 2 + 1
+            pos[a], pos[b] = pos[b], pos[a]
+
+    def clamp_angle(v):
+        return max(0, min(180, int(round(v))))
+
+    angles = [clamp_angle(middle)] * 8
+    for i, finger in enumerate(hand.fingers):
+        ch = channels.get(finger["key"])
+        if not ch or len(ch) != 2:
+            continue
+        cal = calibration.get(finger["key"], {})
+        scale = float(cal.get("scale", 1.0))
+        off = cal.get("offset_deg", [0, 0])
+        v0, v1 = pos[i * 2], pos[i * 2 + 1]
+        angles[ch[0] - 1] = clamp_angle(middle - scale * v0 + float(off[0] or 0))
+        angles[ch[1] - 1] = clamp_angle(middle + scale * v1 + float(off[1] or 0))
+    return angles
+
+
+# ---------------------------------------------------------------- PWM 控制器
+
+PWM_HEADER = 0xAA
+PWM_RESP_HEADER = 0xBB
+PWM_CMD_NOP = 0x00
+PWM_CMD_DIRECT = 0xF0
+PWM_CMD_SET_SIDE = 0xF1
+PWM_CMD_STOP = 0xFF
+PWM_BAUDRATE = 115200
+
+
+def pwm_checksum(cmd: int, data) -> int:
+    cs = cmd ^ len(data)
+    for b in data:
+        cs ^= b
+    return cs & 0xFF
+
+
+def pwm_frame(cmd: int, data=b"") -> bytes:
+    payload = bytes(data)
+    return bytes([PWM_HEADER, cmd, len(payload)]) + payload + bytes([pwm_checksum(cmd, payload)])
+
+
+class PwmController:
+    """ESP32-S3 PWM 固件的串口控制器（pyserial）。
+
+    固件协议：115200-8N1，命令帧 AA CMD LEN DATA... CKSUM，
+    响应帧 BB CMD STATUS CKSUM。
+    """
+
+    is_pwm = True
+
+    def __init__(self, serial_port: str, baudrate: int = PWM_BAUDRATE,
+                 timeout: float = 0.5):
+        import serial  # pyserial
+
+        self._serial_mod = serial
+        self.ser = serial.Serial()
+        self.ser.port = serial_port
+        self.ser.baudrate = int(baudrate)
+        self.ser.timeout = float(timeout)
+        self.ser.write_timeout = 1.0
+        self.ser.dtr = False
+        self.ser.rts = False
+        self.ser.open()
+        try:
+            self.ser.dtr = False
+            self.ser.rts = False
+        except Exception:
+            pass
+
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._alive = threading.Event()
+        self.last_status = None
+        self._last_write = 0.0
+        self._reader = threading.Thread(target=self._read_loop, daemon=True)
+        self._reader.start()
+
+        # 等待 ESP32 启动日志结束，然后发 NOP 握手
+        time.sleep(0.3)
+        try:
+            self.ser.reset_input_buffer()
+        except Exception:
+            pass
+        for _ in range(4):
+            self.send_nop()
+            if self._alive.wait(0.5):
+                return
+            time.sleep(0.3)
+        self.close()
+        raise RuntimeError("ESP32 无响应：请检查波特率 115200、COM 口和 5 V 供电")
+
+    # -- 读写 ---------------------------------------------------------
+    def _read_loop(self):
+        buf = bytearray()
+        while not self._stop.is_set():
+            try:
+                data = self.ser.read(64)
+            except Exception:
+                break
+            if not data:
+                continue
+            buf.extend(data)
+            while True:
+                i = buf.find(PWM_RESP_HEADER)
+                if i < 0:
+                    buf.clear()
+                    break
+                if len(buf) - i < 4:
+                    if i:
+                        del buf[:i]
+                    break
+                cmd, status, cs = buf[i + 1], buf[i + 2], buf[i + 3]
+                del buf[:i + 4]
+                if ((cmd ^ status) & 0xFF) != cs:
+                    continue
+                self.last_status = (cmd, status)
+                self._alive.set()
+                if status in (0x01, 0x02, 0x03):
+                    _log("PWM 状态: cmd=0x%02X status=0x%02X" % (cmd, status))
+
+    def _write(self, frame: bytes):
+        with self._lock:
+            self.ser.write(frame)
+            self.ser.flush()
+
+    def send_nop(self):
+        try:
+            self._write(pwm_frame(PWM_CMD_NOP))
+        except Exception:
+            pass
+
+    def send_angles(self, angles):
+        """angles: 8 个 0-180 的整数。
+
+        节流由 HandDriver._write_pwm 负责（与 SCS0009 路径一致），这里不再丢帧。
+        """
+        values = [max(0, min(180, int(round(float(a))))) for a in angles]
+        if len(values) != 8:
+            raise ValueError("PWM 直驱需要 8 个角度")
+        self._last_write = time.monotonic()
+        self._write(pwm_frame(PWM_CMD_DIRECT, values))
+
+    def set_side(self, side: str):
+        """side: left / right。固件 0xF1: 1=right, 2=left。"""
+        self._write(pwm_frame(PWM_CMD_SET_SIDE, [0x02 if side == "left" else 0x01]))
+
+    def stop(self):
+        try:
+            self._write(pwm_frame(PWM_CMD_STOP))
+        except Exception:
+            pass
+
+    # -- 兼容 HandDriver 的 SCS 接口（PWM 没有这些概念） ----------------
+    def sync_write_torque_enable(self, *args, **kwargs):
+        return None
+
+    def sync_write_goal_speed(self, *args, **kwargs):
+        return None
+
+    def sync_write_goal_position(self, *args, **kwargs):
+        return None
+
+    def close(self):
+        self._stop.set()
+        try:
+            self.ser.close()
+        except Exception:
+            pass
+        try:
+            self._reader.join(timeout=0.5)
+        except Exception:
+            pass
+
+
 # ---------------------------------------------------------------- 舵机
 
 class HandDriver:
@@ -142,6 +337,9 @@ class HandDriver:
         self.torque_on = {k: False for k in hands}
         self.last_goal = {}
         self.last_write_t = 0.0
+        self.driver = cfg.get("driver", "scs0009")
+        self.is_pwm = self.driver == "pwm"
+        self._last_pwm = None
 
     # -- 钳制 ---------------------------------------------------------
     def clamp(self, v: float) -> float:
@@ -163,6 +361,10 @@ class HandDriver:
         for k in keys:
             if k not in self.hands:
                 continue
+            if self.is_pwm:
+                # PWM 固件没有力矩寄存器，连接即保持；只同步状态给 UI。
+                self.torque_on[k] = bool(on)
+                continue
             if self.controller is not None:
                 ids = self.hands[k].servo_ids()
                 self.controller.sync_write_torque_enable(ids, [1 if on else 0] * len(ids))
@@ -172,6 +374,16 @@ class HandDriver:
     def send_pose(self, keys, positions, speed=None, force=False):
         if speed is None:
             speed = self.limits.get("speed", 3)
+
+        if self.is_pwm:
+            safe = [self.clamp(x) for x in positions]
+            for k in keys:
+                if k not in self.hands:
+                    continue
+                angles = pose_to_pwm_angles(self.cfg, self.hands[k], safe)
+                self._write_pwm(angles, force=force)
+            return
+
         for _k, goals in self.targets(keys, positions):
             self._write(goals, speed=speed, force=force)
 
@@ -202,7 +414,27 @@ class HandDriver:
             self.controller.sync_write_goal_speed(ids, [int(speed)] * len(ids))
         self.controller.sync_write_goal_position(ids, rad)
 
+    def _write_pwm(self, angles, force=False):
+        values = tuple(angles)
+        now = time.monotonic()
+        if not force:
+            if values == self._last_pwm:
+                return
+            if now - self.last_write_t < MIN_WRITE_INTERVAL_S:
+                return
+        self.last_write_t = now
+        self._last_pwm = values
+        if self.controller is not None:
+            self.controller.send_angles(list(values))
+
     def release_all(self):
+        if self.is_pwm:
+            if self.controller is not None:
+                try:
+                    self.controller.stop()
+                except Exception:
+                    pass
+            return
         for k in self.enabled:
             try:
                 self.enable_torque([k], False)
@@ -215,7 +447,8 @@ class HandDriver:
         self.controller = controller
         self.port = port
         self.last_goal.clear()
-        self.torque_on = {k: False for k in self.hands}
+        self._last_pwm = None
+        self.torque_on = {k: self.is_pwm for k in self.hands}
 
     def detach(self):
         """断开串口并**真正释放句柄**。
@@ -223,13 +456,21 @@ class HandDriver:
         rustypot 是编译好的 Rust 扩展，没有 close()/disconnect() —— 串口由
         Rust 端持有，只有对象被回收（Drop）时才释放。所以这里必须先把引用
         彻底丢掉再强制 GC，否则重新打开同一串口会报「拒绝访问」。
+        PwmController 是 pyserial 对象，有明确的 close()，直接调用即可。
         """
         if self.controller is not None:
             self.release_all()
+            close = getattr(self.controller, "close", None)
+            if close is not None:
+                try:
+                    close()
+                except Exception:
+                    pass
             self.controller = None
         gc.collect()
         self.port = None
         self.last_goal.clear()
+        self._last_pwm = None
         self.torque_on = {k: False for k in self.hands}
 
 
@@ -281,10 +522,22 @@ def list_serial_ports() -> list[dict]:
 
 
 def open_controller(cfg, port=None):
-    from rustypot import Scs0009PyController
+    driver = cfg.get("driver", "scs0009")
     port = port or cfg["serial"].get("port") or detect_port()
     if not port:
         raise RuntimeError("没有找到串口。请插好控制板，或在上方手动选择。")
+
+    if driver == "pwm":
+        pwm = cfg.get("pwm") or {}
+        baud = int(pwm.get("baudrate", PWM_BAUDRATE))
+        _log("打开 PWM 串口 %s @ %s" % (port, baud))
+        return PwmController(
+            port,
+            baudrate=baud,
+            timeout=float(cfg["serial"].get("timeout_s", 0.5)),
+        )
+
+    from rustypot import Scs0009PyController
     _log("打开串口 %s @ %s" % (port, cfg["serial"]["baudrate"]))
     return Scs0009PyController(
         serial_port=port,
@@ -320,7 +573,7 @@ class WebHandler(SimpleHTTPRequestHandler):
                 idx = WEB_DIR / "index.html"
                 body = idx.read_bytes()
                 assets = ("index.html", "app.js", "tracking.js", "style.css",
-                          "i18n.js", "io.js", "ws.js")
+                          "i18n.js", "common.js", "io.js", "pwm.js", "ws.js")
                 ver = str(int(max((WEB_DIR / a).stat().st_mtime for a in assets)))
                 body = body.replace(b".js\"", (".js?v=%s\"" % ver).encode())
                 body = body.replace(b".css\"", (".css?v=%s\"" % ver).encode())
@@ -393,6 +646,12 @@ class Session:
             "camera": self.cfg.get("camera", {}),
             "target": self.target,
             "positions": self.current,
+            "driver": self.driver.driver,
+            "capabilities": {
+                "torque": not self.driver.is_pwm,
+                "speed": not self.driver.is_pwm,
+            },
+            "pwm": self.cfg.get("pwm", {}),
             "port": {
                 "current": self.driver.port,
                 "connected": self.driver.controller is not None,
@@ -407,6 +666,23 @@ class Session:
 
         if cmd == "hello":
             return self.state()
+
+        if cmd == "driver":
+            d = msg.get("driver")
+            if d not in ("scs0009", "pwm"):
+                return {"type": "error", "msg": "未知驱动：%s" % d}
+            if d != self.driver.driver:
+                self.driver.detach()
+                self.cfg["driver"] = d
+                self.driver.driver = d
+                self.driver.is_pwm = (d == "pwm")
+                self.driver._last_pwm = None
+                _log("切换驱动为 %s（下次连接生效）" % d)
+            return {
+                "type": "driver",
+                "driver": d,
+                "capabilities": {"torque": d != "pwm", "speed": d != "pwm"},
+            }
 
         if cmd == "ports":
             return self._ports_reply()
@@ -460,6 +736,11 @@ class Session:
             t = msg.get("target")
             if t in self.driver.enabled:
                 self.target = t
+            if self.driver.is_pwm and self.driver.controller is not None:
+                try:
+                    self.driver.controller.set_side(self.target)
+                except Exception as e:
+                    _log("PWM 选边失败: %s" % e)
             return {"type": "target", "target": self.target}
 
         if cmd == "pose":
@@ -551,7 +832,14 @@ class Session:
 
     # -- 串口 ---------------------------------------------------------
     def _torque_target(self):
-        """连接时要初始化的手 —— 已启用的一起回中位，免得残留姿态。"""
+        """连接时要初始化的手 —— 已启用的一起回中位，免得残留姿态。
+
+        PWM 版只有一只手，只对当前 target 回中，避免把另一只手的姿态写到同一套通道上。
+        """
+        if self.driver.is_pwm:
+            if self.target in self.driver.enabled:
+                return [self.target]
+            return [self.driver.enabled[0]]
         return list(self.driver.enabled)
 
     @staticmethod
@@ -608,6 +896,8 @@ def parse_args():
     p.add_argument("--port", "-p", default=None, help="串口名，如 COM9 或 /dev/ttyACM0")
     p.add_argument("--hand", choices=["left", "right", "both"], default="both",
                    help="启用哪些手（默认 both）")
+    p.add_argument("--driver", choices=["scs0009", "pwm"], default=None,
+                   help="舵机驱动：scs0009（总线）或 pwm（ESP32-S3 直驱），默认读 config.json")
     p.add_argument("--speed", type=int, default=None, help="覆盖默认速度 1-6")
     p.add_argument("--dry-run", action="store_true", help="不开串口")
     p.add_argument("--no-connect", action="store_true",
@@ -619,6 +909,8 @@ def parse_args():
 def main():
     args = parse_args()
     cfg, hands, limits = load_config()
+    if args.driver:
+        cfg["driver"] = args.driver
     if args.port:
         cfg["serial"]["port"] = args.port
     if args.speed:

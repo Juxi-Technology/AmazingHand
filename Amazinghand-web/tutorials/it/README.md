@@ -25,6 +25,7 @@ python server.py --no-connect   # consigliato: avvia il server, scegli la porta 
 # python server.py                # rileva automaticamente la porta seriale e si connette
 # python server.py --port COM9    # usa una porta specifica
 # python server.py --hand left    # abilita solo la mano sinistra
+# python server.py --driver pwm   # usa i servo PWM dell'ESP32-S3
 # python server.py --dry-run      # nessuna porta seriale, solo interfaccia
 ```
 
@@ -32,16 +33,17 @@ Poi apri **http://localhost:8000** in un browser.
 
 ### Selezionare la porta seriale nella pagina
 
-In cima alla pagina c'è una barra della porta:
+In cima alla pagina c'è una barra degli strumenti: prima scegli il driver, poi la porta seriale:
 
 ```
-Port  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
+Driver  [SCS0009 bus ▾]  Port  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
 ```
 
-- Il menu a tendina elenca tutte le porte seriali presenti sulla macchina. I chip USB-seriale più comuni (CH34x / CP210x / FTDI …) sono contrassegnati con **★** e ordinati per primi
+- Il menu a tendina **Driver**: **bus SCS0009** (servo bus ufficiali, predefinito) o **PWM (ESP32-S3)** (vedi [Versione con servo PWM](#versione-con-servo-pwm-esp32-s3-a-pilotaggio-diretto))
+- Il menu a tendina della porta elenca tutte le porte seriali presenti sulla macchina. I chip USB-seriale più comuni (CH34x / CP210x / FTDI …) sono contrassegnati con **★** e ordinati per primi
 - **Refresh** esegue una nuova scansione (usalo dopo aver collegato la scheda)
 - **Connect** apre la porta selezionata; subito dopo la mano torna in posizione centrale
-- **Disconnect** disattiva prima la coppia, così i servo non restano bloccati dove si trovano
+- **Disconnect** disattiva prima la coppia, così i servo non restano bloccati dove si trovano (la versione PWM non ha comandi di coppia, vedi la spiegazione sotto)
 - Per cambiare porta, seleziona quella nuova e fai clic su Connect — la vecchia porta viene chiusa automaticamente
 
 > **`--no-connect` è pensato proprio per questo flusso**: il server si avvia senza toccare alcuna porta seriale,
@@ -58,6 +60,112 @@ python tools/scan_servos.py --port COM9
 ```
 
 Sostituisci COM9 con la tua porta effettiva.
+
+> Questo strumento vale solo per i **servo bus SCS0009**. Per la verifica del cablaggio della versione PWM, vedi la sezione seguente, oppure usa `AmazingHand-PWM/tools/serial_test.py` o la pagina web.
+
+---
+
+## Versione con servo PWM (ESP32-S3 a pilotaggio diretto)
+
+La pagina web supporta due tipi di hardware: i servo bus SCS0009 ufficiali e 8 servo PWM con ESP32-S3. Nella versione PWM è l'ESP32-S3 a generare direttamente gli 8 segnali PWM; il computer invia solo comandi via seriale e **non serve alcuna scheda driver di bus**.
+
+### Hardware e cablaggio
+
+| Voce | Modello |
+|------|---------|
+| MCU | Scheda di sviluppo ESP32-S3 (Youxin YX-ESP32-S3 o equivalente) |
+| Servo | 8 servo PWM — il firmware è tarato per **servo digitali PTK 7452 MG-D (333 Hz)** |
+| Scheda adattatrice | Scheda adattatrice per servo PWM |
+| Alimentazione | 5 V / 3 A, con massa comune tra scheda adattatrice ed ESP32 |
+
+Canali PWM → GPIO:
+
+| Canale | GPIO | Giunto | Canale | GPIO | Giunto |
+|------|------|------|------|------|------|
+| PWM1 | 4 | Giunto 1 dell'indice | PWM5 | 15 | Giunto 1 dell'anulare |
+| PWM2 | 5 | Giunto 2 dell'indice | PWM6 | 16 | Giunto 2 dell'anulare |
+| PWM3 | 6 | Giunto 1 del medio | PWM7 | 17 | Giunto 1 del pollice |
+| PWM4 | 7 | Giunto 2 del medio | PWM8 | 18 | Giunto 2 del pollice |
+
+> ⚠️ I comuni servo analogici a 50 Hz come l'SG90 non possono sostituire direttamente il firmware a 333 Hz. Per cambiare modello di servo bisogna modificare insieme `LEDC_FREQ` e la taratura della larghezza d'impulso e verificare di nuovo.
+
+### Caricare il firmware
+
+Codice sorgente e file precompilati del firmware sono in [`AmazingHand-PWM/`](../../../AmazingHand-PWM/README.md):
+
+```bash
+# metodo 1: ESP-IDF (v5.x / v6.x)
+cd AmazingHand-PWM/firmware/AmazingHand_Serial
+idf.py set-target esp32s3
+idf.py build
+idf.py -p COM3 flash monitor
+
+# metodo 2: bin precompilato (richiede esptool)
+python -m esptool --chip esp32s3 -p COM3 -b 460800 write_flash 0x0 \
+  AmazingHand-PWM/firmware/prebuilt/amazinghand_pwm.bin
+```
+
+All'accensione la seriale stampa:
+
+```
+AmazingHand Serial Control Ready (ESP-IDF)
+Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
+```
+
+### Connessione dalla pagina web
+
+1. Nel menu **Driver** in alto seleziona **PWM (ESP32-S3)**
+2. Fai clic su **Add port…** e seleziona la porta USB dell'ESP32-S3
+3. Fai clic su **Connect**: la pagina esegue automaticamente l'handshake (NOP), invia la scelta della mano e torna alla posizione centrale
+4. Poi controlla con gli slider, le pose predefinite e la teleoperazione con la camera; il titolo delle dita mostra **CH 1/2 …** (numero di canale PWM)
+
+### Differenze rispetto alla versione SCS0009
+
+| Voce | Versione bus SCS0009 | Versione PWM |
+|------|----------------------|--------------|
+| Baudrate seriale | 1,000,000 | **115,200** |
+| Scheda driver | Scheda driver bus USB | ESP32-S3 + scheda adattatrice PWM |
+| Coppia | Attivabile/rilasciabile | **Nessuna** (il firmware non ha comandi di coppia, il pulsante viene nascosto) |
+| Arresto di emergenza | Rilascia tutta la coppia | Invia `0xFF` per interrompere il gesto; i servo restano alimentati e mantengono la posizione |
+| Velocità | Supporta il parametro di velocità | I frame in pilotaggio diretto non hanno parametro di velocità |
+| Mano destra/sinistra | ID servo diversi | Stessi canali, si cambia con `0xF1` (influenza soprattutto i gesti del firmware; le pose della pagina usano la mappatura della rispettiva mano) |
+
+### Calibrazione degli angoli
+
+La pagina converte i valori di posa in 8 angoli da 0 a 180°, con la formula predefinita:
+
+```
+angle = 90 + dir × scale × valore di posa + offset
+```
+
+- Per ogni dito il primo canale ha `dir = -1`, il secondo `dir = +1`
+- Per impostazione predefinita `scale = 1` e `offset = 0`, cioè si rispecchia direttamente l'angolo dell'asse del servo
+- La mano sinistra applica prima `mirror_pose`, scambiando i due valori di posa di ogni dito
+
+Se sulla macchina reale la direzione è opposta o il centro è sfalsato, modifica `pwm.calibration` in [`config.json`](../../../Amazinghand-web-io/config.json):
+
+```jsonc
+"pwm": {
+  "calibration": {
+    "right": {
+      "pointer": { "scale": 1.0, "offset_deg": [0, 0] }
+    }
+  }
+}
+```
+
+- Direzione opposta: imposta `scale` del dito corrispondente a `-1`
+- Offset del centro: regola `offset_deg` (separatamente per i due canali)
+- Procedura dito per dito: torna al centro → trascina un singolo dito → osserva direzione/centro → modifica `scale`/`offset_deg` → ricarica la pagina e riprova
+
+### Domande frequenti
+
+- **Connessione fallita / ESP32 non risponde**: verifica che il baudrate sia 115200, che sia selezionata la porta COM dell'ESP32, che l'alimentazione sia 5 V/3 A e che ci sia massa comune; all'apertura della porta l'ESP32 può resettarsi e la pagina ritenta automaticamente il NOP
+- **I servo non si muovono o tremano**: verifica prima che i servo siano digitali a 333 Hz (PTK 7452 MG-D o equivalenti) e che l'alimentazione sia sufficiente; l'SG90 richiede una modifica del firmware
+- **Direzione invertita**: imposta `scale` del dito corrispondente a `-1`
+- **Centro sbagliato**: regola `offset_deg` del canale corrispondente
+- **Messaggio «occupato (gesto in corso)»**: il firmware sta eseguendo un gesto integrato; attendi che finisca o premi l'arresto di emergenza (`0xFF`)
+- **Scansione dei servo**: `tools/scan_servos.py` vale solo per SCS0009; per il PWM usa `AmazingHand-PWM/tools/serial_test.py` o la pagina web
 
 ---
 

@@ -25,6 +25,9 @@
       "conn.on": "已连接",
 
       "port.label": "串口",
+      "driver.label": "驱动",
+      "driver.scs": "SCS0009 总线",
+      "driver.pwm": "PWM（ESP32-S3）",
       "port.detecting": "检测中…",
       "port.refresh": "添加串口…",
       "port.refreshServer": "刷新",
@@ -70,6 +73,7 @@
       "btn.torqueRelease": "松开力矩",
       "btn.torqueEnable": "开启力矩",
       "btn.stop": "急停（全部松开）",
+      "btn.stopPwm": "急停（中止手势）",
 
       "cam.label": "摄像头",
       "cam.defaultDevice": "默认设备",
@@ -191,6 +195,9 @@
       "conn.on": "Connected",
 
       "port.label": "Port",
+      "driver.label": "Driver",
+      "driver.scs": "SCS0009 bus",
+      "driver.pwm": "PWM (ESP32-S3)",
       "port.detecting": "Detecting…",
       "port.refresh": "Add port…",
       "port.refreshServer": "Refresh",
@@ -236,6 +243,7 @@
       "btn.torqueRelease": "Release torque",
       "btn.torqueEnable": "Enable torque",
       "btn.stop": "E-STOP (release all)",
+      "btn.stopPwm": "E-STOP (abort gesture)",
 
       "cam.label": "Camera",
       "cam.defaultDevice": "Default device",

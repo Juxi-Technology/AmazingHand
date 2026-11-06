@@ -1,0 +1,4 @@
+# AmazingHand Serial Control — ESP-IDF 项目
+cmake_minimum_required(VERSION 3.16)
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(amazing_hand_serial)

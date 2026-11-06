@@ -25,6 +25,7 @@ python server.py --no-connect   # recommended: start the server, pick the port i
 # python server.py                # auto-detect the serial port and connect
 # python server.py --port COM9    # use a specific port
 # python server.py --hand left    # enable the left hand only
+# python server.py --driver pwm   # ESP32-S3 PWM servos instead of SCS0009
 # python server.py --dry-run      # no serial port at all, UI only
 ```
 
@@ -34,12 +35,23 @@ Then open **http://localhost:8000** in a browser.
 > and injects `AH_BACKEND = "ws"`, so the same front-end talks to this server over WebSocket instead of
 > Web Serial. Edit the UI there — there is no second copy in this folder.
 
+### Choosing the servo driver
+
+The web app supports two hardware versions. Pick the driver in the top bar (or with `--driver` when starting the server):
+
+| Driver | Hardware | Baud | Notes |
+|--------|----------|------|-------|
+| **SCS0009** (default) | Official serial-bus servos | 1,000,000 | Torque enable/release and speed control available |
+| **PWM** | ESP32-S3 + 8 PWM servos | **115,200** | No torque release or speed; E-STOP aborts the running gesture |
+
+PWM channel map: index 1/2, middle 3/4, ring 5/6, thumb 7/8. Angle calibration lives in `config.json` under `pwm.calibration`; see [`../AmazingHand-PWM/`](../AmazingHand-PWM/) for firmware, wiring and the full manual.
+
 ### Picking the serial port in the page
 
 The top of the page has a port bar:
 
 ```
-Port  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
+Driver [PWM (ESP32-S3) ▾]  Port [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]
 ```
 
 - The dropdown lists every serial port on the machine. Common USB-serial chips (CH34x / CP210x / FTDI …) are marked **★** and sorted first

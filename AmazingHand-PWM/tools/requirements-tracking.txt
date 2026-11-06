@@ -1,0 +1,9 @@
+# AmazingHand 手势追踪依赖 (需 64 位 Python, 见用户手册)
+# mediapipe 0.10.14 是最后一个支持旧版 mp.solutions.hands 的版本(3D 世界坐标必需)
+# 注意: mediapipe 0.10.14 仅提供 win_amd64 wheel, 必须用 64 位 Python 安装
+mediapipe==0.10.14
+numpy>=1.23,<2.0
+scipy>=1.9,<1.19
+opencv-python>=4.10
+Pillow>=10.0
+pyserial>=3.5

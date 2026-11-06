@@ -18,6 +18,11 @@
 </header>
 
 <div class="port-bar">
+  <span class="muted" data-i18n="driver.label">驱动</span>
+  <select id="driver-select" class="driver-select">
+    <option value="scs0009" data-i18n="driver.scs">SCS0009 总线</option>
+    <option value="pwm" data-i18n="driver.pwm">PWM（ESP32-S3）</option>
+  </select>
   <span class="muted" data-i18n="port.label">串口</span>
   <select id="port-select"><option data-i18n="port.detecting">检测中…</option></select>
   <button id="btn-port-refresh" class="ghost" data-i18n-title="port.refreshTitle" title="重新扫描串口"
@@ -114,8 +119,10 @@
   <span class="muted" data-i18n-html="footer.text"></span>
 </footer>
 
+<script src="common.js"></script>
 <script src="i18n.js"></script>
 <script src="io.js"></script>
+<script src="pwm.js"></script>
 <script src="ws.js"></script>
 <script src="app.js"></script>
 <script>

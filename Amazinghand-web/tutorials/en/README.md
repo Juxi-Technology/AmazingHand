@@ -25,6 +25,7 @@ python server.py --no-connect   # recommended: start the server, pick the port i
 # python server.py                # auto-detect the serial port and connect
 # python server.py --port COM9    # use a specific port
 # python server.py --hand left    # enable the left hand only
+# python server.py --driver pwm   # use the ESP32-S3 PWM servo version
 # python server.py --dry-run      # no serial port at all, UI only
 ```
 
@@ -32,16 +33,17 @@ Then open **http://localhost:8000** in a browser.
 
 ### Picking the serial port in the page
 
-The top of the page has a port bar:
+The top of the page has a toolbar — pick the driver first, then the port:
 
 ```
-Port  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
+Driver  [SCS0009 bus ▾]  Port  [COM3 ★ USB-Enhanced-SERIAL CH343 ▾]  [Refresh]  [Connect]  [Disconnect]  Connected to COM3
 ```
 
+- The driver dropdown: **SCS0009 bus** (the official bus servos, default) or **PWM (ESP32-S3)** (see [PWM servo version](#pwm-servo-version-esp32-s3-direct-drive) below)
 - The dropdown lists every serial port on the machine. Common USB-serial chips (CH34x / CP210x / FTDI …) are marked **★** and sorted first
 - **Refresh** re-scans (use it after plugging the board in)
 - **Connect** opens the selected port; the hand returns to middle right after
-- **Disconnect** releases torque first, so the servos don't stay locked where they are
+- **Disconnect** releases torque first, so the servos don't stay locked where they are (the PWM version has no torque command; see below)
 - To switch ports, just pick the new one and click Connect — the old port is closed for you
 
 > **`--no-connect` is designed for this flow**: the server starts up without touching any serial port,
@@ -58,6 +60,112 @@ python tools/scan_servos.py --port COM9
 ```
 
 Replace COM9 with your actual port.
+
+> This tool only applies to **SCS0009 bus servos**. For the wiring check on the PWM version, see below, or use `AmazingHand-PWM/tools/serial_test.py`.
+
+---
+
+## PWM servo version (ESP32-S3 direct drive)
+
+The web page supports two kinds of hardware: the official SCS0009 bus servos, and an ESP32-S3 + 8 PWM servos. In the PWM version the ESP32-S3 generates the 8 PWM signals directly; the computer only sends commands over the serial port — **no bus driver board is needed**.
+
+### Hardware and wiring
+
+| Item | Model |
+|------|-------|
+| Controller | ESP32-S3 dev board (Youxin YX-ESP32-S3 or equivalent) |
+| Servos | 8 PWM servos — the firmware is calibrated for **PTK 7452 MG-D digital servos (333 Hz)** |
+| Adapter board | PWM servo adapter board |
+| Power | 5 V / 3 A, adapter board and ESP32 share a common ground |
+
+PWM channel → GPIO:
+
+| Channel | GPIO | Joint | Channel | GPIO | Joint |
+|---------|------|-------|---------|------|-------|
+| PWM1 | 4 | Index joint 1 | PWM5 | 15 | Ring joint 1 |
+| PWM2 | 5 | Index joint 2 | PWM6 | 16 | Ring joint 2 |
+| PWM3 | 6 | Middle joint 1 | PWM7 | 17 | Thumb joint 1 |
+| PWM4 | 7 | Middle joint 2 | PWM8 | 18 | Thumb joint 2 |
+
+> ⚠️ Common 50 Hz analog servos such as the SG90 cannot directly replace the 333 Hz firmware. To use a different servo model, you must change `LEDC_FREQ` and the pulse-width calibration and re-verify.
+
+### Flashing the firmware
+
+Firmware source and prebuilt files are in [`AmazingHand-PWM/`](../../../AmazingHand-PWM/README.md):
+
+```bash
+# Option 1: ESP-IDF (v5.x / v6.x)
+cd AmazingHand-PWM/firmware/AmazingHand_Serial
+idf.py set-target esp32s3
+idf.py build
+idf.py -p COM3 flash monitor
+
+# Option 2: prebuilt bin (requires esptool)
+python -m esptool --chip esp32s3 -p COM3 -b 460800 write_flash 0x0 \
+  AmazingHand-PWM/firmware/prebuilt/amazinghand_pwm.bin
+```
+
+After power-up the serial port prints:
+
+```
+AmazingHand Serial Control Ready (ESP-IDF)
+Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
+```
+
+### Connecting from the web page
+
+1. Select **PWM (ESP32-S3)** in the **Driver** dropdown at the top
+2. Click **Add port…** and pick the ESP32-S3's USB serial port
+3. Click **Connect**: the page performs the handshake (NOP) automatically, sends the left/right hand selection and returns to middle
+4. After that, control it with the sliders, preset poses and camera teleop; the finger headers show **CH 1/2 …** (PWM channel numbers)
+
+### Differences from the SCS0009 version
+
+| Item | SCS0009 bus version | PWM version |
+|------|---------------------|-------------|
+| Serial baud rate | 1,000,000 | **115,200** |
+| Driver board | USB bus driver board | ESP32-S3 + PWM adapter board |
+| Torque | can be enabled/released | **none** (the firmware has no torque command; the button is hidden) |
+| E-stop | releases all torque | sends `0xFF` to abort the gesture; the servos stay powered and hold position |
+| Speed | supports a speed parameter | direct-drive frames have no speed parameter |
+| Left/right hand | different servo IDs | same set of channels, switch with `0xF1` (mainly affects firmware gestures; the web poses use each hand's own mapping) |
+
+### Angle calibration
+
+The page converts pose values into 8 angles in 0–180°, default formula:
+
+```
+angle = 90 + dir × scale × pose value + offset
+```
+
+- The first channel of each finger has `dir = -1`, the second has `dir = +1`
+- Defaults are `scale = 1`, `offset = 0`, i.e. directly mirroring the servo shaft angle
+- The left hand first swaps each finger's two pose values according to `mirror_pose`
+
+If the direction is reversed on the real hand or the middle position is off, edit `pwm.calibration` in [`config.json`](../../../Amazinghand-web-io/config.json):
+
+```jsonc
+"pwm": {
+  "calibration": {
+    "right": {
+      "pointer": { "scale": 1.0, "offset_deg": [0, 0] }
+    }
+  }
+}
+```
+
+- Direction reversed: set that finger's `scale` to `-1`
+- Middle offset: adjust `offset_deg` (one per channel)
+- Per-finger procedure: return to middle → drag one finger on its own → observe direction/middle → change `scale`/`offset_deg` → reload the page and retry
+
+### FAQ
+
+- **Connection fails / ESP32 doesn't respond**: confirm the baud rate is 115200, you selected the ESP32's COM port, and the 5 V/3 A supply and common ground are in place; opening the serial port may reset the ESP32 — the page retries the NOP automatically
+- **Servos don't move or jitter**: first confirm the servos are 333 Hz digital servos (PTK 7452 MG-D or equivalent) and the power supply is adequate; the SG90 needs firmware changes
+- **Direction is reversed**: set that finger's `scale` to `-1`
+- **Middle position is off**: adjust the corresponding channel's `offset_deg`
+- **"Busy (gesture running)" prompt**: the firmware is executing a built-in gesture; wait for it to finish or press the E-stop (`0xFF`)
+- **Scanning servos**: `tools/scan_servos.py` only applies to SCS0009; for PWM use `AmazingHand-PWM/tools/serial_test.py` or the web page
 
 ---
 

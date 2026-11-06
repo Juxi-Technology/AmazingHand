@@ -24,6 +24,19 @@ htmlcov/
 # ---- Rust (AmazingHand-main/Demo) ----
 target/
 
+# ---- ESP-IDF (AmazingHand-PWM) ----
+sdkconfig
+sdkconfig.old
+*.bin
+!AmazingHand-PWM/firmware/prebuilt/*.bin
+*.elf
+*.map
+dependencies.lock
+managed_components/
+out/
+*.bak
+*.spec
+
 # ---- dora-rs ----
 *.dora
 

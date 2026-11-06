@@ -1,0 +1,3 @@
+# AmazingHand 上位机依赖
+# GUI (hand_gui.py) 和串口测试工具 (serial_test.py) 仅依赖 pyserial
+pyserial>=3.5

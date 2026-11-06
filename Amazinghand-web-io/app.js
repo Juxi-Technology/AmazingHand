@@ -26,16 +26,25 @@ const state = {
   limits: { pose_min_deg: -120, pose_max_deg: 120 },
   connected: false,
   port: null,               // 最近一次串口状态，切换语言时重渲染用
+  driver: "scs0009",        // scs0009 / pwm
+  capabilities: {},         // { torque: bool, speed: bool }
+  pwm: null,                // PWM 通道/中位信息
 };
+
+/* 静态模式下用户选的驱动；服务端模式下以 state.driver 为准。 */
+const DRIVER_LS_KEY = "ah_driver";
+let selectedDriver = (localStorage.getItem(DRIVER_LS_KEY) === "pwm") ? "pwm" : "scs0009";
 
 /* ------------------------------------------------------------ 连接 */
 
 /* 传输层二选一：
  *   - 页面由 server.py 提供时，服务端在 index.html 里注入 AH_BACKEND="ws"，走 WebSocket
- *   - 静态托管（GitHub Pages / 本地静态服务器）时，走 io.js 的 Web Serial
- * 两者的消息协议完全一致，下面的逻辑不区分。 */
+ *   - 静态托管（GitHub Pages / 本地静态服务器）时，按用户选择的驱动走 io.js（SCS0009）
+ *     或 pwm.js（ESP32-S3 直驱）的 Web Serial
+ * 三者的消息协议完全一致，下面的逻辑不区分。 */
 function backend() {
   if (window.AH_BACKEND === "ws" && window.AH_WS) return window.AH_WS;
+  if (selectedDriver === "pwm" && window.AH_PWM) return window.AH_PWM;
   return window.AHIO;
 }
 
@@ -64,6 +73,14 @@ function handle(m) {
     state.positions = m.positions;
     state.limits = m.limits;
     state.axes = m.axes || null;
+    state.driver = m.driver || state.driver;
+    state.capabilities = m.capabilities || {};
+    state.pwm = m.pwm || null;
+    // 服务端模式：下拉框跟随服务端下发的驱动
+    if (isServer() && el("driver-select")) {
+      selectedDriver = state.driver;
+      el("driver-select").value = state.driver;
+    }
     // 摄像头的两根轴目标值也要存下来，否则 tracking.js 的 camCfg() 永远走
     // DEFAULT_CAMERA 兜底 —— config.json 的 camera 段就白改了
     state.camera = m.camera || null;
@@ -77,6 +94,7 @@ function handle(m) {
     renderPoses();
     renderFingers();
     updateMeta();
+    applyCapabilities();
     return;
   }
   if (m.type === "ports" || m.type === "connected" || m.type === "disconnected") {
@@ -89,6 +107,15 @@ function handle(m) {
   if (m.type === "error") {
     // 后端直接给的中文错误原文先用着 —— 服务端不做 i18n
     setPortState(m.msg || t("port.error"), true);
+    return;
+  }
+  if (m.type === "driver") {
+    state.driver = m.driver;
+    state.capabilities = m.capabilities || {};
+    selectedDriver = m.driver;
+    if (el("driver-select")) el("driver-select").value = m.driver;
+    applyCapabilities();
+    updateMeta();
     return;
   }
   if (m.type === "target") {
@@ -170,7 +197,7 @@ function renderFingers() {
     const wrap = document.createElement("div");
     wrap.className = "finger";
     wrap.innerHTML = `
-      <h3>${fingerName(f)}<span class="ids">ID ${f.ids.join(" / ")}</span></h3>
+      <h3>${fingerName(f)}<span class="ids">${idLabel()} ${f.ids.join(" / ")}</span></h3>
       <div class="joint">
         <label>${t("axis.flexion")}<b data-readout="${f.key}-0">${Math.round(base)}</b></label>
         <input type="range" data-finger="${f.key}" data-axis="0" data-fi="${fi}"
@@ -328,12 +355,62 @@ function bindPort() {
   };
 }
 
+function bindDriver() {
+  const sel = el("driver-select");
+  if (!sel) return;
+  sel.value = selectedDriver;
+
+  sel.onchange = () => {
+    const d = sel.value === "pwm" ? "pwm" : "scs0009";
+
+    if (isServer()) {
+      // 服务端自己管串口：切驱动后需要断开重连（服务端会先释放旧控制器）
+      send({ cmd: "disconnect" });
+      send({ cmd: "driver", driver: d });
+      selectedDriver = d;
+      localStorage.setItem(DRIVER_LS_KEY, d);
+      return;
+    }
+
+    // 静态模式：先断开旧后端，再用新后端重新初始化
+    try {
+      const old = backend();
+      if (old.isConnected && old.isConnected()) old.send({ cmd: "disconnect" });
+    } catch (_) { /* ignore */ }
+
+    selectedDriver = d;
+    localStorage.setItem(DRIVER_LS_KEY, d);
+    state.driver = d;
+    state.capabilities = {};
+    applyCapabilities();
+    backend().init({ onMessage: handle });
+  };
+}
+
 /* ------------------------------------------------------------ 渲染 */
+
+/* PWM 模式显示通道号（CH），SCS0009 显示舵机 ID。 */
+function idLabel() {
+  return state.driver === "pwm" ? "CH" : "ID";
+}
 
 function updateMeta() {
   const h = state.hands[state.target];
   if (!h) return;
-  el("hand-meta").textContent = `${handName(state.target, h)} · ID ${h.servo_ids.join(", ")}`;
+  el("hand-meta").textContent =
+    `${handName(state.target, h)} · ${idLabel()} ${h.servo_ids.join(", ")}`;
+}
+
+/* 根据后端能力调整控件：PWM 没有力矩释放和速度控制。 */
+function applyCapabilities() {
+  const cap = state.capabilities || {};
+  const pwm = state.driver === "pwm";
+
+  el("btn-torque").style.display = cap.torque === false ? "none" : "";
+  el("btn-stop").textContent = t(pwm ? "btn.stopPwm" : "btn.stop");
+
+  const info = el("port-info");
+  if (info) info.textContent = t(pwm ? "driver.pwm" : "driver.scs");
 }
 
 function updateTorqueBtn() {
@@ -345,6 +422,7 @@ function updateTorqueBtn() {
 
 function bind() {
   bindPort();
+  bindDriver();
 
   el("btn-middle").onclick = () => send({ cmd: "middle", target: state.target });
 
@@ -391,6 +469,7 @@ window.I18N.onChange(() => {
   renderFingers();
   updateMeta();
   updateTorqueBtn();
+  applyCapabilities();
   if (state.port) renderPorts(state.port);
 });
 
