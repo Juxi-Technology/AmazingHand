@@ -78,6 +78,8 @@ The web page supports two kinds of hardware: the official SCS0009 bus servos, an
 | Adapter board | PWM servo adapter board |
 | Power | 5 V / 3 A, adapter board and ESP32 share a common ground |
 
+> The servo is rated 4.5 kg·cm at 7.4 V; with the 5 V/3 A supply used here, expect about 2.8–3 kg·cm.
+
 PWM channel → GPIO:
 
 | Channel | GPIO | Joint | Channel | GPIO | Joint |
@@ -88,6 +90,8 @@ PWM channel → GPIO:
 | PWM4 | 7 | Middle joint 2 | PWM8 | 18 | Thumb joint 2 |
 
 > ⚠️ Common 50 Hz analog servos such as the SG90 cannot directly replace the 333 Hz firmware. To use a different servo model, you must change `LEDC_FREQ` and the pulse-width calibration and re-verify.
+
+> Wiring is identical for both hands: within each finger pair the right servo is the odd channel and the left the even one; the index finger is always CH1/2. Left/right differences are code-only.
 
 ### Flashing the firmware
 
@@ -128,6 +132,7 @@ Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
 | Torque | can be enabled/released | **none** (the firmware has no torque command; the button is hidden) |
 | E-stop | releases all torque | sends `0xFF` to abort the gesture; the servos stay powered and hold position |
 | Speed | supports a speed parameter | direct-drive frames have no speed parameter |
+| Feedback | position/temperature/voltage/speed readback | **no feedback**; stall or step loss cannot be detected |
 | Left/right hand | different servo IDs | same set of channels, switch with `0xF1` (mainly affects firmware gestures; the web poses use each hand's own mapping) |
 
 ### Angle calibration

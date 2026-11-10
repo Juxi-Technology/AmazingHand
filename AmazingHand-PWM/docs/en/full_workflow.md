@@ -88,7 +88,7 @@ This section and Section 5.2 below are for reference only for users who have the
 | Hardware | Description |
 |------|------|
 | ESP32-S3 development board | YX-ESP32-S3 or equivalent |
-| 8-channel PWM servos | Analog servos, differential drive |
+| 8-channel PWM servos | Digital PWM servos (PTK 7452 MG-D or equivalent, 333 Hz), differential drive |
 | Servo adapter board | Servos → 8-channel PWM output |
 | Dedicated 5V power supply | **At least 5V 3A**; servos draw large transient currents |
 | USB data cable | ESP32-S3 Type-C → PC |

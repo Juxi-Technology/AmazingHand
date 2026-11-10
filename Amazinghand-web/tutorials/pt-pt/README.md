@@ -78,6 +78,8 @@ A página web suporta as duas variantes de hardware: os servos de barramento SCS
 | Placa adaptadora | Placa adaptadora para servos PWM |
 | Alimentação | 5 V / 3 A, com terra comum entre a placa adaptadora e o ESP32 |
 
+> O servo é especificado em 4,5 kg·cm a 7,4 V; com a alimentação de 5 V/3 A usada aqui, conte com cerca de 2,8–3 kg·cm.
+
 Canal PWM → GPIO:
 
 | Canal | GPIO | Articulação | Canal | GPIO | Articulação |
@@ -88,6 +90,8 @@ Canal PWM → GPIO:
 | PWM4 | 7 | Médio, articulação 2 | PWM8 | 18 | Polegar, articulação 2 |
 
 > ⚠️ Servos analógicos comuns de 50 Hz, como o SG90, não podem substituir diretamente o firmware de 333 Hz. Para trocar o modelo de servo, é preciso alterar ao mesmo tempo `LEDC_FREQ` e a calibração da largura de pulso, e voltar a validar.
+
+> A cablagem é idêntica nas duas mãos: em cada par de dedos, o servo da direita é o canal ímpar e o da esquerda o par; o indicador é sempre CH1/2. As diferenças entre esquerda/direita estão apenas no código.
 
 ### Gravar o firmware
 
@@ -128,6 +132,7 @@ Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
 | Binário | Pode ser ativado/libertado | **Nenhum** (o firmware não tem comando de binário; o botão fica oculto) |
 | Paragem de emergência | Liberta todo o binário | Envia `0xFF` para abortar o gesto; os servos continuam alimentados e mantêm a posição |
 | Velocidade | Aceita parâmetro de velocidade | Os frames de acionamento direto não têm parâmetro de velocidade |
+| Feedback | Leitura de posição/temperatura/tensão/velocidade | **Sem leitura**; não deteta bloqueio ou perda de passos |
 | Mão esquerda/direita | IDs de servo diferentes | Os mesmos canais; envia `0xF1` para alternar (afeta principalmente os gestos do firmware; as poses da página web usam o mapeamento de cada mão) |
 
 ### Calibração dos ângulos

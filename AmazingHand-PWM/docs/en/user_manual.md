@@ -58,8 +58,10 @@ The project provides two firmware implementations:
 | Item | Model |
 |------|------|
 | Main controller | **ESP32-S3** development board (Youxin YX-ESP32-S3 or equivalent) |
-| Servos | 8-channel PWM analog servos (SG90 or equivalent) |
+| Servos | 8-channel PWM **digital** servos (PTK 7452 MG-D or equivalent, 333 Hz) |
 | Adapter board | PWM servo adapter board |
+
+> ⚠️ 50 Hz analog servos such as the SG90 are **not** drop-in replacements for the 333 Hz firmware. Changing the servo model requires updating `LEDC_FREQ` and the pulse-width calibration, then revalidating.
 
 The ESP32-S3 development board has two Type-C ports:
 - **Built-in USB Serial/JTAG**: connects directly to the USB controller built into the ESP32-S3 chip

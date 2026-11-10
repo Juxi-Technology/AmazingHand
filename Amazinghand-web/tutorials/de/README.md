@@ -78,6 +78,8 @@ Die Webseite unterstützt zwei Arten von Hardware: die offiziellen SCS0009-Bus-S
 | Adapterplatine | PWM-Servo-Adapterplatine |
 | Stromversorgung | 5 V / 3 A, Adapterplatine und ESP32 mit gemeinsamer Masse |
 
+> Der Servo ist mit 4,5 kg·cm bei 7,4 V spezifiziert; mit der hier verwendeten 5-V-/3-A-Versorgung sind etwa 2,8–3 kg·cm zu erwarten.
+
 PWM-Kanal → GPIO:
 
 | Kanal | GPIO | Gelenk | Kanal | GPIO | Gelenk |
@@ -88,6 +90,8 @@ PWM-Kanal → GPIO:
 | PWM4 | 7 | Mittelfinger Gelenk 2 | PWM8 | 18 | Daumen Gelenk 2 |
 
 > ⚠️ Gängige 50-Hz-Analogservos wie das SG90 können die 333-Hz-Firmware nicht direkt ersetzen. Um ein anderes Servomodell zu verwenden, müssen `LEDC_FREQ` und die Pulsbreiten-Kalibrierung geändert und erneut verifiziert werden.
+
+> Die Verkabelung ist bei beiden Händen gleich: Pro Fingerpaar ist der rechte Servo der ungerade Kanal und der linke der gerade; der Zeigefinger ist immer CH1/2. Unterschiede zwischen links/rechts gibt es nur im Code.
 
 ### Firmware flashen
 
@@ -128,6 +132,7 @@ Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
 | Drehmoment | kann aktiviert/freigegeben werden | **keins** (die Firmware hat keinen Drehmomentbefehl; der Button wird ausgeblendet) |
 | Not-Aus | gibt das gesamte Drehmoment frei | sendet `0xFF`, um die Geste abzubrechen; die Servos bleiben bestromt und halten die Position |
 | Geschwindigkeit | unterstützt einen Geschwindigkeitsparameter | Direktantriebs-Frames haben keinen Geschwindigkeitsparameter |
+| Rückmeldung | Positions-/Temperatur-/Spannungs-/Geschwindigkeitsrückmeldung | **Keine Rückmeldung**; Blockieren/Schrittverlust nicht erkennbar |
 | Linke/rechte Hand | unterschiedliche Servo-IDs | dieselben Kanäle, Umschalten mit `0xF1` (beeinflusst hauptsächlich die Firmware-Gesten; die Web-Posen nutzen die Zuordnung der jeweiligen Hand) |
 
 ### Winkelkalibrierung

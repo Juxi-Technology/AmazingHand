@@ -78,6 +78,8 @@ La page web prend en charge deux types de matériel : les servos de bus SCS0009 
 | Carte d'adaptation | Carte d'adaptation pour servos PWM |
 | Alimentation | 5 V / 3 A, masse commune entre la carte d'adaptation et l'ESP32 |
 
+> Le servo est donné pour 4,5 kg·cm à 7,4 V ; avec l'alimentation 5 V/3 A utilisée ici, comptez environ 2,8–3 kg·cm.
+
 Canaux PWM → GPIO :
 
 | Canal | GPIO | Articulation | Canal | GPIO | Articulation |
@@ -88,6 +90,8 @@ Canaux PWM → GPIO :
 | PWM4 | 7 | Majeur, articulation 2 | PWM8 | 18 | Pouce, articulation 2 |
 
 > ⚠️ Les servos analogiques courants à 50 Hz, comme le SG90, ne peuvent pas remplacer directement le firmware à 333 Hz. Pour changer de modèle de servo, il faut modifier à la fois `LEDC_FREQ` et l'étalonnage de la largeur d'impulsion, puis revalider.
+
+> Le câblage est identique pour les deux mains : dans chaque paire de doigts, le servo de droite est le canal impair et celui de gauche le canal pair ; l'index est toujours CH1/2. Les différences gauche/droite sont uniquement dans le code.
 
 ### Flasher le firmware
 
@@ -128,6 +132,7 @@ Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
 | Couple | Peut être activé/relâché | **Aucun** (le firmware n'a pas de commande de couple ; le bouton est masqué) |
 | Arrêt d'urgence | Relâche tout le couple | Envoie `0xFF` pour interrompre le geste ; les servos restent alimentés et gardent leur position |
 | Vitesse | Prend un paramètre de vitesse | Les trames de pilotage direct n'ont pas de paramètre de vitesse |
+| Retour d'information | Position/température/tension/vitesse | **Aucun retour** ; blocage ou perte de pas non détectable |
 | Main gauche/droite | ID de servos différents | Le même groupe de canaux ; envoie `0xF1` pour basculer (affecte surtout les gestes du firmware ; les poses de la page utilisent le mapping de chaque main) |
 
 ### Étalonnage des angles

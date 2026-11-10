@@ -78,6 +78,8 @@ La pagina web supporta due tipi di hardware: i servo bus SCS0009 ufficiali e 8 s
 | Scheda adattatrice | Scheda adattatrice per servo PWM |
 | Alimentazione | 5 V / 3 A, con massa comune tra scheda adattatrice ed ESP32 |
 
+> Il servo è dichiarato 4,5 kg·cm a 7,4 V; con l'alimentazione 5 V/3 A usata qui, aspettati circa 2,8–3 kg·cm.
+
 Canali PWM → GPIO:
 
 | Canale | GPIO | Giunto | Canale | GPIO | Giunto |
@@ -88,6 +90,8 @@ Canali PWM → GPIO:
 | PWM4 | 7 | Giunto 2 del medio | PWM8 | 18 | Giunto 2 del pollice |
 
 > ⚠️ I comuni servo analogici a 50 Hz come l'SG90 non possono sostituire direttamente il firmware a 333 Hz. Per cambiare modello di servo bisogna modificare insieme `LEDC_FREQ` e la taratura della larghezza d'impulso e verificare di nuovo.
+
+> Il cablaggio è identico per entrambe le mani: in ogni coppia di dita il servo destro è il canale dispari e il sinistro il pari; l'indice è sempre CH1/2. Le differenze sinistra/destra sono solo nel codice.
 
 ### Caricare il firmware
 
@@ -128,6 +132,7 @@ Protocol: 115200-8N1 [0xAA CMD LEN DATA CKSUM]
 | Coppia | Attivabile/rilasciabile | **Nessuna** (il firmware non ha comandi di coppia, il pulsante viene nascosto) |
 | Arresto di emergenza | Rilascia tutta la coppia | Invia `0xFF` per interrompere il gesto; i servo restano alimentati e mantengono la posizione |
 | Velocità | Supporta il parametro di velocità | I frame in pilotaggio diretto non hanno parametro di velocità |
+| Retroazione | Lettura di posizione/temperatura/tensione/velocità | **Nessuna lettura**; blocco o perdita di passi non rilevabili |
 | Mano destra/sinistra | ID servo diversi | Stessi canali, si cambia con `0xF1` (influenza soprattutto i gesti del firmware; le pose della pagina usano la mappatura della rispettiva mano) |
 
 ### Calibrazione degli angoli
