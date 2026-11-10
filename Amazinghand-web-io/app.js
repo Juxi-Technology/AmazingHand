@@ -449,6 +449,7 @@ function switchTab(which) {
 
 window.AH = {
   target: () => state.target,
+  driver: () => state.driver,
   /** 让机械手回到中位（摄像头启动前先调一次，避免上手就是随机姿势） */
   middle() { return send({ cmd: "middle", target: state.target }); },
   sendAngles(angles) {

@@ -48,6 +48,8 @@ const fingerLabel = (k) => window.I18N.pick("finger", k, k);
  * 不再写死在这里。采集只负责记录"你的手做这些动作时摄像头测到什么"，
  * 目标值由配置决定。 */
 const SMOOTH = 0.35;            // 指数平滑，越大越平滑但越迟钝
+const SMOOTH_RING_DEFAULT = 0.18;     // 无名指默认加大平滑
+const DEADBAND_RING_DEFAULT = 2.0;    // 无名指默认输出死区（姿态值度）
 
 let landmarker = null;
 let stream = null;
@@ -56,6 +58,18 @@ let lastCount = 0;
 let fpsT = 0, fpsN = 0;
 
 const smooth = {};              // fingerKey -> 平滑后的 {b, s}
+const outSmooth = {};           // fingerKey -> 死区后的整数 {b, s}
+const medHist = {};             // 无名指 3 帧中值滤波历史
+
+/** 3 帧中值滤波：只用于无名指，压掉单帧跳变。 */
+function med3(key, axis, v) {
+  const k = key + ":" + axis;
+  const arr = medHist[k] || (medHist[k] = []);
+  arr.push(v);
+  if (arr.length > 3) arr.shift();
+  const s = [...arr].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
+}
 
 const el = (id) => document.getElementById(id);
 
@@ -226,6 +240,8 @@ const FINGER_ORDER = ["ring", "middle", "pointer", "thumb"];
 const DEFAULT_CAMERA = {
   flex_straight: -50,
   flex_fist:     { ring: 90, middle: 90, pointer: 90, thumb: 18 },
+  // PWM 舵机拇指行程更大，握拳目标单独给一套；用 18 会显得几乎不动。
+  flex_fist_pwm: { ring: 90, middle: 90, pointer: 90, thumb: 75 },
   side_spread:   { ring: -45, middle: 0, pointer: 45, thumb: -45 },
   side_together: { ring: 45, middle: 0, pointer: -45, thumb: 0 },
 };
@@ -235,6 +251,7 @@ function camCfg() {
   // 侧摆方向按「控制对象」分：左右手方向相反时，config 的 side_sign 里给出 ±1。
   // 取反时把两个端点都乘上 sign，等价于整根侧摆轴取反，屈伸不受影响。
   const hand = (window.AH && window.AH.target) ? window.AH.target() : "right";
+  const driver = (window.AH && window.AH.driver) ? window.AH.driver() : "scs0009";
   const sign = (c.side_sign && c.side_sign[hand]) || 1;
   const scaled = (o) => {
     if (!o || sign === 1) return o;
@@ -242,9 +259,12 @@ function camCfg() {
     for (const k of Object.keys(o)) r[k] = o[k] * sign;
     return r;
   };
+  const fist = (driver === "pwm")
+    ? (c.flex_fist_pwm || DEFAULT_CAMERA.flex_fist_pwm)
+    : (c.flex_fist || DEFAULT_CAMERA.flex_fist);
   return {
     flex_straight: c.flex_straight ?? DEFAULT_CAMERA.flex_straight,
-    flex_fist:     c.flex_fist     || DEFAULT_CAMERA.flex_fist,
+    flex_fist:     fist,
     side_spread:   scaled(c.side_spread   || DEFAULT_CAMERA.side_spread),
     side_together: scaled(c.side_together || DEFAULT_CAMERA.side_together),
   };
@@ -287,6 +307,8 @@ let cal = null;           // 三个姿势都采完才非 null
 
 function resetCal() {
   capTarget = null; capAcc = null; capN = 0; collected = {}; cal = null;
+  for (const k of Object.keys(outSmooth)) delete outSmooth[k];
+  for (const k of Object.keys(medHist)) delete medHist[k];
   renderCal();
 }
 
@@ -368,6 +390,10 @@ function toAngles(lm, wlm, label) {
     const v = splayDeg(wlm, mcp, prox, frame);
     splay[k] = v;
   }
+  // 无名指关键点最容易抖：3 帧中值 + 更强平滑 + 输出死区
+  flex.ring = med3("ring", "flex", flex.ring);
+  splay.ring = med3("ring", "splay", splay.ring);
+
   // 采集中或还没采完：不下发，手保持在中位 —— 免得被拽向"伸直"姿势
   if (!cal) {
     if (capTarget) stepCapture(splay, flex);
@@ -377,6 +403,14 @@ function toAngles(lm, wlm, label) {
 
   const out = {};
   for (const key of Object.keys(flex)) {
+    const isRing = key === "ring";
+    const alphaFlex = isRing
+      ? (state.camera?.smooth_ring ?? SMOOTH_RING_DEFAULT)
+      : SMOOTH;
+    // 侧摆要更跟手：无名指侧摆单独用一套更快的平滑，不要被屈伸的重平滑拖慢
+    const alphaSplay = isRing
+      ? (state.camera?.splay_smooth_ring ?? 0.45)
+      : SMOOTH;
     // ---- 屈伸轴：① 伸直 → ③ 握拳，两点实测 ----
     let base = CAM.flex_straight;
     let curl = 0;                       // 0 = 伸直，1 = 握紧
@@ -389,7 +423,7 @@ function toAngles(lm, wlm, label) {
       }
     }
     const pb = smooth[key]?.b ?? base;
-    base = pb + (base - pb) * SMOOTH;
+    base = pb + (base - pb) * alphaFlex;
 
     // ---- 侧摆轴：② 合拢 → ① 张开，两点实测。拇指不参与，恒为 0 ----
     //
@@ -411,11 +445,29 @@ function toAngles(lm, wlm, label) {
       side *= (1 - curl);
     }
     const ps = smooth[key]?.s ?? side;
-    side = ps + (side - ps) * SMOOTH;
+    side = ps + (side - ps) * alphaSplay;
+    // 无名指侧摆幅度可单独放大（默认 1.0 不改变原有行为）
+    if (isRing) side *= (state.camera?.splay_gain_ring ?? 1.0);
 
     smooth[key] = { b: base, s: side };
+
+    // 输出死区：屈伸和侧摆分别取不同死区，侧摆要更灵敏
+    let bOut = Math.round(base);
+    let sOut = Math.round(side);
+    const prev = outSmooth[key];
+    if (prev) {
+      const dbB = isRing
+        ? (state.camera?.deadband_ring ?? DEADBAND_RING_DEFAULT)
+        : 0.6;
+      const dbS = isRing
+        ? (state.camera?.splay_deadband_ring ?? 0.8)
+        : 0.6;
+      if (Math.abs(bOut - prev.b) < dbB) bOut = prev.b;
+      if (Math.abs(sOut - prev.s) < dbS) sOut = prev.s;
+    }
+    outSmooth[key] = { b: bOut, s: sOut };
     // 合成下发：servo1 = 屈伸 + 侧摆，servo2 = 屈伸 − 侧摆
-    out[key] = [Math.round(base + side), Math.round(base - side)];
+    out[key] = [bOut + sOut, bOut - sOut];
   }
   return out;
 }

@@ -163,8 +163,9 @@
       "cam.scriptFailed": "脚本加载失败：{src}\n请刷新页面重试。",
 
       "footer.text":
-        "舵机映射：右手 无名指 5,6 / 中指 3,4 / 食指 1,2 / 拇指 7,8；左手对应 11,12 / 13,14 / 15,16 / 17,18。<br>" +
-        "换算 servo = (ID 奇数 ? +1 : -1) × (姿态值 − 手偏移)。",
+        "舵机映射：SCS0009 右手 从右往左数，右边奇数、左边偶数，ID 1–8【拇指（8,7），无名指（6,5），中指（4,3），食指（2,1）】，中位顺序（0–1023）451,571,451,571,451,571,451,571。<br>" +
+        "SCS0009 左手 从右往左数，右边奇数、左边偶数，ID 11–18【拇指（18,17），食指（16,15），中指（14,13），无名指（12,11）】，中位顺序 571,451,571,451,571,451,571,451。<br>" +
+        "PWM：左右手接线相同，右边奇数、左边偶数；CH1–CH8 对应 ESP32-S3 GPIO 4,5,6,7,15,16,17,18（食指固定 CH1/2、中指 CH3/4、无名指 CH5/6、拇指 CH7/8）。左右手只在代码映射上不同，接线不变。",
 
       "pose.open": "张开",
       "pose.close": "握拳",
@@ -336,9 +337,13 @@
       "cam.scriptFailed": "Script failed to load: {src}\nPlease reload the page.",
 
       "footer.text":
-        "Servo map: right hand ring 5,6 / middle 3,4 / index 1,2 / thumb 7,8; " +
-        "left hand 11,12 / 13,14 / 15,16 / 17,18.<br>" +
-        "servo = (odd ID ? +1 : -1) × (pose value − hand offset).",
+        "Servo map: SCS0009 right hand — count right to left; odd on the right, even on the left; IDs 1–8 " +
+        "[thumb (8,7), ring (6,5), middle (4,3), index (2,1)]; middle order (0–1023) 451,571,451,571,451,571,451,571.<br>" +
+        "SCS0009 left hand — count right to left; odd on the right, even on the left; IDs 11–18 " +
+        "[thumb (18,17), index (16,15), middle (14,13), ring (12,11)]; middle order 571,451,571,451,571,451,571,451.<br>" +
+        "PWM: identical wiring for both hands — odd on the right, even on the left. " +
+        "CH1–CH8 = ESP32-S3 GPIO 4,5,6,7,15,16,17,18 (index always CH1/2, middle CH3/4, ring CH5/6, thumb CH7/8). " +
+        "Only the code mapping differs between hands; wiring is unchanged.",
 
       "pose.open": "Open",
       "pose.close": "Fist",

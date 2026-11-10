@@ -38,6 +38,7 @@ import traceback
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parent
 WEB_DIR = ROOT.parent / "Amazinghand-web-io"      # 前端只有一份，Python 版直接复用
@@ -551,6 +552,24 @@ def open_controller(cfg, port=None):
 class WebHandler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=str(WEB_DIR), **kw)
+
+    # tracking.js 的 MediaPipe 资源回退路径是 ../Amazinghand-web/web/mediapipe。
+    # 静态托管时它以普通相对路径访问；server.py 只把 Amazinghand-web-io 当根目录，
+    # 所以这里要显式映射，否则模型加载 404，页面显示“模型失败”。
+    MEDIAPIPE_URL_PREFIX = "/Amazinghand-web/web/mediapipe/"
+    MEDIAPIPE_DIR = (ROOT.parent / "Amazinghand-web" / "web" / "mediapipe").resolve()
+
+    def translate_path(self, path):
+        clean = path.split("?", 1)[0].split("#", 1)[0]
+        if clean.startswith(self.MEDIAPIPE_URL_PREFIX):
+            rel = unquote(clean[len(self.MEDIAPIPE_URL_PREFIX):])
+            target = (self.MEDIAPIPE_DIR / rel).resolve()
+            try:
+                target.relative_to(self.MEDIAPIPE_DIR)
+            except ValueError:
+                return str(self.MEDIAPIPE_DIR / "__forbidden__")
+            return str(target)
+        return super().translate_path(path)
 
     def end_headers(self):
         # 开发服务器：禁用一切缓存。

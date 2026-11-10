@@ -81,6 +81,23 @@
       "pointer": 90,
       "thumb": 18
     },
+    "//flex_fist_pwm": "PWM 驱动专用握拳目标：PWM 舵机的拇指行程比 SCS0009 大，thumb 用 18 会显得收缩很小，改用 75。",
+    "flex_fist_pwm": {
+      "ring": 90,
+      "middle": 90,
+      "pointer": 90,
+      "thumb": 75
+    },
+    "//smooth_ring": "无名指平滑系数，越小越平滑但越迟钝（默认 0.18）。",
+    "smooth_ring": 0.18,
+    "//deadband_ring": "无名指输出死区（姿态值度）。抖动仍大时调到 3~4；太迟钝就减小。",
+    "deadband_ring": 2.0,
+    "//splay_smooth_ring": "无名指侧摆平滑系数，侧摆要跟手，默认比屈伸快（0.45）；抖就降到 0.3。",
+    "splay_smooth_ring": 0.45,
+    "//splay_deadband_ring": "无名指侧摆死区，默认 0.8；抖就调到 1.5。",
+    "splay_deadband_ring": 0.8,
+    "//splay_gain_ring": "无名指侧摆幅度倍数；觉得摆得不够大就调到 1.2~1.4，太大就降到 1.0。",
+    "splay_gain_ring": 1.15,
     "side_spread": {
       "ring": 45,
       "middle": 0,
