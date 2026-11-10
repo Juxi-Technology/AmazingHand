@@ -31,7 +31,7 @@ if defined PYEXE goto found
 
 REM 方法3: 常用路径
 for %%d in (
-    "C:\Users\admin\AppData\Local\Programs\Python\Python312-64\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python312-64\python.exe"
     "C:\Program Files\Python312-64\python.exe"
 ) do (
     if exist %%d set "PYEXE=%%~d"
