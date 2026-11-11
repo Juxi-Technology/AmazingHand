@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### Position Array
 - **8 values** representing servo positions in degrees
-- **Servo mapping**:
-  - Servo 1: Pointer finger position (0=open, 110=closed)
-  - Servo 2: Pointer finger side (-20=left, 0=center, +20=right)
-  - Servo 3: Middle finger position
-  - Servo 4: Middle finger side
-  - Servo 5: Ring finger position
-  - Servo 6: Ring finger side
-  - Servo 7: Thumb position
-  - Servo 8: Thumb side
+- **Array order**: 8 values, two per finger, in the order **ring, middle, pointer, thumb**. Both values of a finger are mixed into that finger's two servos; they are not separate flexion/splay servos. Software values: `servo1 = flex + splay`, `servo2 = flex − splay`; even-ID servos are inverted in hardware.
 
 - **Close/Open slider range**: 0-110° per finger (0=open, 110=closed)
 - **Side slider range**: -40° (left) to +40° (right)

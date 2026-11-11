@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### Array delle posizioni
 - **8 valori** che rappresentano le posizioni dei servo in gradi
-- **Mappatura dei servo**:
-  - Servo 1: posizione del dito indice (0=aperto, 110=chiuso)
-  - Servo 2: lato del dito indice (-20=sinistra, 0=centro, +20=destra)
-  - Servo 3: posizione del dito medio
-  - Servo 4: lato del dito medio
-  - Servo 5: posizione del dito anulare
-  - Servo 6: lato del dito anulare
-  - Servo 7: posizione del pollice
-  - Servo 8: lato del pollice
+- **Ordine dell'array**: 8 valori, due per dito, nell'ordine **anulare, medio, indice, pollice**. Entrambi i valori di un dito vengono miscelati nei suoi due servo; non sono servo separati di flessione/divaricazione. Valori software: `servo1 = flessione + divaricazione`, `servo2 = flessione − divaricazione`; i servo con ID pari sono invertiti nell'hardware.
 
 - **Intervallo dello slider chiudi/apri**: 0-110° per dito (0=aperto, 110=chiuso)
 - **Intervallo dello slider laterale**: -40° (sinistra) a +40° (destra)

@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### 位置陣列
 - **8 個值**，表示各舵機的角度位置
-- **舵機對應**：
-  - 舵機 1：食指位置（0=張開，110=握緊）
-  - 舵機 2：食指左右偏移（-20=左，0=中位，+20=右）
-  - 舵機 3：中指位置
-  - 舵機 4：中指左右偏移
-  - 舵機 5：無名指位置
-  - 舵機 6：無名指左右偏移
-  - 舵機 7：拇指位置
-  - 舵機 8：拇指左右偏移
+- **陣列順序**：8 個值，每根手指 2 個，順序為 **無名指、中指、食指、拇指**。同一根手指的兩個值會合成到該指的兩個舵機上，**不是「一個舵機管屈伸、一個管側擺」**。軟體值：`servo1 = 屈伸 + 側擺`，`servo2 = 屈伸 − 側擺`；偶數 ID 舵機在硬體中反向。
 
 - **開合滑桿範圍**：每根手指 0-110°（0=張開，110=握緊）
 - **左右滑桿範圍**：-40°（左）到 +40°（右）

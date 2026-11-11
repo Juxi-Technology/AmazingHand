@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### Tableau des positions
 - **8 valeurs** représentant les positions des servos en degrés
-- **Correspondance des servos** :
-  - Servo 1 : position du doigt index (0=ouvert, 110=fermé)
-  - Servo 2 : latéral du doigt index (-20=gauche, 0=centre, +20=droite)
-  - Servo 3 : position du majeur
-  - Servo 4 : latéral du majeur
-  - Servo 5 : position de l'annulaire
-  - Servo 6 : latéral de l'annulaire
-  - Servo 7 : position du pouce
-  - Servo 8 : latéral du pouce
+- **Ordre du tableau** : 8 valeurs, deux par doigt, dans l'ordre **annulaire, majeur, index, pouce**. Les deux valeurs d'un doigt sont mélangées dans ses deux servos ; ce ne sont pas des servos séparés flexion/écartement. Valeurs logicielles : `servo1 = flexion + écartement`, `servo2 = flexion − écartement` ; les servos d'ID pair sont inversés dans le matériel.
 
 - **Plage du curseur fermé/ouvert** : 0-110° par doigt (0=ouvert, 110=fermé)
 - **Plage du curseur latéral** : -40° (gauche) à +40° (droite)

@@ -186,22 +186,23 @@ Source: `DEFAULT_HAND_SERVOS` in `AmazingHandControl/hand_logic.py` and
 | Index | 1, 2 | 15, 16 |
 | Thumb | 7, 8 | 17, 18 |
 
-### A finger's two servos do different jobs ⚠️
+### Both servos drive the finger together ⚠️
 
 ```
-servo1 (odd ID)  = flexion axis   open ↔ closed
-servo2 (even ID) = splay axis     fingers together ↔ apart
+same-direction rotation     = splay
+opposite-direction rotation = flexion
 ```
 
-The UI shows exactly these two axes. **"The finger won't spread / won't close up" means the splay axis isn't moving** —
-a scissors-style V comes from index splay `+17` and middle splay `−30` (one positive, one negative).
+The two servos are mounted side by side with collinear axes and drive the finger together. **"The finger won't spread / won't close" means the splay control value is zero or the two servos are not forming a differential** — a scissors-style V comes from index splay `+17` and middle splay `−30` (one positive, one negative).
 
-They are combined on the wire:
+The UI shows two control axes, not two servos. They are combined on the wire:
 
 ```
 servo1 = flexion + splay
 servo2 = flexion − splay
 ```
+
+These are software angles; the even ID is inverted for mounting, so do not compare them directly with the servos' physical rotation directions.
 
 Range (derived from the 19 official poses plus middle):
 
@@ -362,9 +363,8 @@ side = side_measured × (1 − curl)
 "spread" suddenly snaps to the other end.
 
 Without the fade, that snap travels through `servo2 = flexion − splay` and drags the **even-ID servo**
-into reverse. (The odd ID gets `flexion + splay`, so it moves the same way, just faster — you can't see it.)
-The symptom is "half-way into a fist, servos 12 and 16 suddenly reverse" — 12 is the left ring finger's
-splay servo and 16 the left index finger's, precisely the two whose splay targets are non-zero.
+into reverse. (The odd ID gets `flexion + splay`, so its change goes the opposite way and is less obvious.)
+The symptom is "half-way into a fist, servos 12 and 16 suddenly reverse" — 12 is the second servo of the left ring finger and 16 the second servo of the left index finger, precisely the two whose splay component is non-zero.
 
 With the fade, splay is **exactly 0** at full curl no matter how wild the measurement gets.
 And a fist should be fingers-together anyway.
@@ -477,6 +477,6 @@ To calibrate against your own assembly, edit `middle.positions` in `config.json`
 2. **A reversed direction means that pose was captured backwards** — just re-capture that one button, no code change
 3. **The thumb shouldn't splay** — it only flexes, see section 3 above
 
-**A servo snaps into reverse half-way into a fist** → that servo should have an **even ID** (the splay axis, e.g. left hand 12 / 16).
+**A servo snaps into reverse half-way into a fist** → that is the second (even-ID) servo of the pair; it is inverted for mounting and receives the `base − side` value. Check whether the splay value is too large or its sign is wrong.
 Normally splay fades to 0 with curl and never jumps; if you see this, the `side *= (1 - curl)` line in
 `tracking.js` isn't taking effect, or `curl` isn't being computed.

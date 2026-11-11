@@ -186,22 +186,23 @@ Quelle: `DEFAULT_HAND_SERVOS` in `AmazingHandControl/hand_logic.py` und
 | Zeigefinger | 1, 2 | 15, 16 |
 | Daumen | 7, 8 | 17, 18 |
 
-### Die zwei Servos eines Fingers haben unterschiedliche Aufgaben ⚠️
+### Beide Servos treiben den Finger gemeinsam ⚠️
 
 ```
-servo1 (ungerade ID) = Flexionsachse   offen ↔ geschlossen
-servo2 (gerade ID)   = Spreizachse     Finger zusammen ↔ auseinander
+gleichsinnige Drehung  = Spreizung
+gegensinnige Drehung   = Flexion
 ```
 
-Die UI zeigt genau diese beiden Achsen. **„Der Finger spreizt sich nicht / schließt sich nicht" bedeutet, dass sich die Spreizachse nicht bewegt** —
-ein scherenartiges V entsteht durch Index-Spreizung `+17` und Mittelfinger-Spreizung `−30` (einer positiv, einer negativ).
+Die beiden Servos sind nebeneinander mit kollinearen Achsen montiert und treiben den Finger gemeinsam. **„Der Finger spreizt sich nicht / schließt sich nicht" bedeutet, dass der Spreizungs-Steuerwert null ist oder die beiden Servos kein Differenzial bilden** — ein scherenartiges V entsteht durch Index-Spreizung `+17` und Mittelfinger-Spreizung `−30` (einer positiv, einer negativ).
 
-Sie werden auf dem Bus kombiniert:
+Die UI zeigt zwei Steuerachsen, nicht zwei Servos. Auf dem Bus werden sie kombiniert:
 
 ```
 servo1 = Flexion + Spreizung
 servo2 = Flexion − Spreizung
 ```
+
+Das sind Softwarewinkel; die gerade ID wird wegen der Montage invertiert, daher nicht direkt mit den physischen Drehrichtungen der Servos vergleichen.
 
 Bereich (abgeleitet aus den 19 offiziellen Posen plus Mittelstellung):
 
@@ -364,9 +365,8 @@ side = side_measured × (1 − curl)
 „Spreizung“ springt plötzlich auf das andere Ende.
 
 Ohne das Abklingen wandert dieser Sprung durch `servo2 = Flexion − Spreizung` und zieht den **Servo mit gerader ID**
-in die Rückwärtsrichtung. (Die ungerade ID erhält `Flexion + Spreizung`, bewegt sich also in dieselbe Richtung, nur schneller — das sieht man nicht.)
-Das Symptom lautet „auf halbem Weg zur Faust kehren die Servos 12 und 16 plötzlich um“ — 12 ist der Spreizservo
-des linken Ringfingers und 16 der des linken Zeigefingers, genau die beiden, deren Spreiz-Zielwerte ungleich null sind.
+in die Rückwärtsrichtung. (Die ungerade ID erhält `Flexion + Spreizung`, ihre Änderung läuft also entgegengesetzt und fällt weniger auf.)
+Das Symptom lautet „auf halbem Weg zur Faust kehren die Servos 12 und 16 plötzlich um“ — 12 ist der zweite Servo des linken Ringfingers und 16 der des linken Zeigefingers, genau die beiden, deren Spreizanteil ungleich null ist.
 
 Mit dem Abklingen ist die Spreizung bei voller Krümmung **exakt 0**, egal wie wild die Messung wird.
 Und eine Faust sollte ohnehin mit zusammengelegten Fingern ausgeführt werden.
@@ -479,6 +479,6 @@ Um auf deine eigene Montage zu kalibrieren, bearbeite `middle.positions` in `con
 2. **Eine umgekehrte Richtung bedeutet, dass diese Pose verkehrt herum aufgenommen wurde** — nimm einfach diese eine Taste neu auf, keine Codeänderung nötig
 3. **Der Daumen sollte sich nicht spreizen** — er führt nur Flexion aus, siehe Abschnitt 3 oben
 
-**Ein Servo springt auf halbem Weg zur Faust in die Rückwärtsrichtung** → dieser Servo sollte eine **gerade ID** haben (die Spreizachse, z. B. linke Hand 12 / 16).
+**Ein Servo springt auf halbem Weg zur Faust in die Rückwärtsrichtung** → das ist der zweite (gerade ID) Servo des Paares; er ist wegen der Montage invertiert und erhält den Wert `base − side`. Prüfen Sie, ob der Spreizwert zu groß oder sein Vorzeichen falsch ist.
 Normalerweise geht die Spreizung mit der Krümmung auf 0 und springt nie; wenn du das siehst, wirkt die Zeile `side *= (1 - curl)` in
 `tracking.js` nicht, oder `curl` wird nicht berechnet.

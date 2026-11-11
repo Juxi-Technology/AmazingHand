@@ -186,22 +186,23 @@ Fonte: `DEFAULT_HAND_SERVOS` em `AmazingHandControl/hand_logic.py` e
 | Indicador | 1, 2 | 15, 16 |
 | Polegar | 7, 8 | 17, 18 |
 
-### Os dois servos de um dedo fazem trabalhos diferentes ⚠️
+### Os dois servos movem o dedo em conjunto ⚠️
 
 ```
-servo1 (ID ímpar)  = eixo de flexão    aberto ↔ fechado
-servo2 (ID par)    = eixo de abertura  dedos juntos ↔ afastados
+rotação no mesmo sentido    = abertura
+rotação em sentidos opostos = flexão
 ```
 
-A UI mostra exatamente estes dois eixos. **«O dedo não abre / não fecha» significa que o eixo de abertura não se está a mover** —
-um V em tesoura vem da abertura do indicador `+17` e da abertura do médio `−30` (um positivo, um negativo).
+Os dois servos ficam lado a lado, com eixos colineares, e movem o dedo em conjunto. **«O dedo não abre / não fecha» significa que o valor de controlo da abertura é zero ou que os dois servos não formam um diferencial** — um V em tesoura vem da abertura do indicador `+17` e da abertura do médio `−30` (um positivo, um negativo).
 
-São combinados no barramento:
+A UI mostra dois eixos de controlo, não dois servos. No barramento são combinados:
 
 ```
 servo1 = flexão + abertura
 servo2 = flexão − abertura
 ```
+
+São ângulos de software; o ID par é invertido pela montagem, por isso não os compare diretamente com as direções físicas de rotação.
 
 Intervalo (derivado das 19 poses oficiais mais o centro):
 
@@ -362,9 +363,8 @@ side = side_measured × (1 − curl)
 medida salta de repente para o outro extremo.
 
 Sem este desvanecimento, esse salto atravessa `servo2 = flexion − splay` e arrasta o **servo de ID par**
-para o sentido inverso. (O ID ímpar recebe `flexion + splay`, por isso move-se no mesmo sentido, apenas mais depressa — não se nota.)
-O sintoma é «a meio de fechar o punho, os servos 12 e 16 invertem de repente» — o 12 é o servo de abertura do
-anelar esquerdo e o 16 o do indicador esquerdo, precisamente os dois cujos alvos de abertura são diferentes de zero.
+para o sentido inverso. (O ID ímpar recebe `flexão + abertura`, por isso a sua variação vai no sentido oposto e nota-se menos.)
+O sintoma é «a meio de fechar o punho, os servos 12 e 16 invertem de repente» — o 12 é o segundo servo do anelar esquerdo e o 16 o do indicador esquerdo, precisamente os dois cujo componente de abertura é diferente de zero.
 
 Com o desvanecimento, a abertura é **exatamente 0** no enrolamento total, por muito disparatada que a medição fique.
 E um punho deve ter os dedos juntos de qualquer forma.
@@ -477,6 +477,6 @@ Para calibrar com a tua própria montagem, edita `middle.positions` no `config.j
 2. **Uma direção invertida significa que essa pose foi capturada ao contrário** — basta recapturar esse botão, sem alterar código
 3. **O polegar não deve abrir** — apenas flexiona, vê a secção 3 acima
 
-**Um servo entra em sentido inverso a meio de fechar o punho** → esse servo deve ter um **ID par** (o eixo de abertura, por exemplo 12 / 16 na mão esquerda).
+**Um servo entra em sentido inverso a meio de fechar o punho** → esse é o segundo servo (ID par) do par; está invertido por causa da montagem e recebe o valor `base − side`. Verifique se o valor de abertura é demasiado grande ou se o sinal está errado.
 Normalmente a abertura desvanece para 0 com o enrolamento e nunca salta; se vires isto, a linha `side *= (1 - curl)` em
 `tracking.js` não está a ter efeito, ou o `curl` não está a ser calculado.

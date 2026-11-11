@@ -186,22 +186,23 @@ Fonte: `DEFAULT_HAND_SERVOS` em `AmazingHandControl/hand_logic.py` e
 | Indicador | 1, 2 | 15, 16 |
 | Polegar | 7, 8 | 17, 18 |
 
-### Os dois servos de um dedo fazem trabalhos diferentes ⚠️
+### Os dois servos movem o dedo juntos ⚠️
 
 ```
-servo1 (ID ímpar) = eixo de flexão   aberto ↔ fechado
-servo2 (ID par)   = eixo de splay    dedos juntos ↔ afastados
+rotação no mesmo sentido    = abdução
+rotação em sentidos opostos = flexão
 ```
 
-A interface mostra exatamente esses dois eixos. **"O dedo não abre / não fecha" significa que o eixo de splay (abertura lateral) não está se movendo** —
-um V estilo tesoura vem do splay do indicador `+17` e do splay do médio `−30` (um positivo, um negativo).
+Os dois servos ficam lado a lado, com eixos colineares, e movem o dedo em conjunto. **"O dedo não abre / não fecha" significa que o valor de controle de abdução é zero ou que os dois servos não formam um diferencial** — um V estilo tesoura vem do splay do indicador `+17` e do splay do médio `−30` (um positivo, um negativo).
 
-Eles são combinados no barramento:
+A interface mostra dois eixos de controle, não dois servos. No barramento eles são combinados:
 
 ```
 servo1 = flexão + splay
 servo2 = flexão − splay
 ```
+
+São ângulos de software; o ID par é invertido pela montagem, então não os compare diretamente com as direções físicas de rotação dos servos.
 
 Faixa (derivada das 19 poses oficiais mais a posição do meio):
 
@@ -362,9 +363,8 @@ side = side_measured × (1 − curl)
 medido salta de repente para a outra extremidade.
 
 Sem esse fade, o salto passa por `servo2 = flexão − splay` e arrasta o **servo de ID par**
-para o sentido inverso. (O ID ímpar recebe `flexão + splay`, então se move no mesmo sentido, só que mais rápido — você não percebe.)
-O sintoma é "na metade do caminho para fechar o punho, os servos 12 e 16 invertem de repente" — 12 é o servo de splay do anelar
-esquerdo e 16 o do indicador esquerdo, justamente os dois cujos alvos de splay são diferentes de zero.
+para o sentido inverso. (O ID ímpar recebe `flexão + splay`, então sua variação vai no sentido oposto e chama menos atenção.)
+O sintoma é "na metade do caminho para fechar o punho, os servos 12 e 16 invertem de repente" — 12 é o segundo servo do anelar esquerdo e 16 o do indicador esquerdo, justamente os dois cujo componente de splay é diferente de zero.
 
 Com o fade, o splay é **exatamente 0** no fechamento total, por mais maluca que a medição fique.
 E um punho fechado deve ter os dedos juntos de qualquer forma.
@@ -477,6 +477,6 @@ Para calibrar com a sua própria montagem, edite `middle.positions` no `config.j
 2. **Uma direção invertida significa que aquela pose foi capturada ao contrário** — basta recapturar aquele botão, sem mudar código
 3. **O polegar não deve fazer splay** — ele só flexiona, veja a seção 3 acima
 
-**Um servo inverte de repente na metade do caminho para fechar o punho** → esse servo deve ter um **ID par** (o eixo de splay, por exemplo 12 / 16 na mão esquerda).
+**Um servo inverte de repente na metade do caminho para fechar o punho** → esse é o segundo servo (ID par) do par; ele é invertido pela montagem e recebe o valor `base − side`. Verifique se o valor de abdução está grande demais ou com o sinal errado.
 Normalmente o splay vai a 0 conforme o dedo fecha e nunca salta; se você vir isso, a linha `side *= (1 - curl)` em
 `tracking.js` não está fazendo efeito, ou `curl` não está sendo calculado.

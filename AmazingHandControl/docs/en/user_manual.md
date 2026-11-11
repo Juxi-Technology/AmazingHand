@@ -67,7 +67,7 @@ The AmazingHand Controller GUI provides real-time monitoring and manual control 
 
 ### 4.1 Finger Control Panel (Left Column)
 
-Each finger widget controls a pair of servos (position + side offset):
+Each finger widget exposes two control axes (close/open + side offset) that are mixed into both servos; the pair is driven differentially (same direction = splay, opposite = close/open):
 
 - **Mode toggle:** switch between **Auto** (base + offset sliders) and **Raw** (direct servo targets).
 - **Status LED:** gray (idle), green (moving), red (blocked potential, based on load vs goal).

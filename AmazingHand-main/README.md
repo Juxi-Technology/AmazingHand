@@ -39,7 +39,7 @@ Amazing Hand is:
 
 ![Hand Overview](assets/Hand_Overview.jpg)
 Each finger is driven by a parallel mechanism. 
-That means 2x small Feetech SCS0009 servos are used to move each finger in flexion/extension and abduction/adduction
+That means 2x small Feetech SCS0009 servos jointly drive each finger in flexion/extension and abduction/adduction through differential motion
 
 ![Finger Overview](assets/Finger_Overview.jpg)
 

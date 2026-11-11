@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### Array de posiciones
 - **8 valores** que representan las posiciones de los servos en grados
-- **Asignación de servos**:
-  - Servo 1: posición del dedo índice (0=abierto, 110=cerrado)
-  - Servo 2: lateral del dedo índice (-20=izquierda, 0=centro, +20=derecha)
-  - Servo 3: posición del dedo medio
-  - Servo 4: lateral del dedo medio
-  - Servo 5: posición del dedo anular
-  - Servo 6: lateral del dedo anular
-  - Servo 7: posición del pulgar
-  - Servo 8: lateral del pulgar
+- **Orden del array**: 8 valores, dos por dedo, en el orden **anular, medio, índice, pulgar**. Ambos valores de un dedo se mezclan en sus dos servos; no son servos separados de flexión/abducción. Valores de software: `servo1 = flexión + abducción`, `servo2 = flexión − abducción`; los servos con ID par están invertidos en el hardware.
 
 - **Rango del deslizador Abrir/Cerrar**: 0-110° por dedo (0=abierto, 110=cerrado)
 - **Rango del deslizador lateral**: -40° (izquierda) a +40° (derecha)

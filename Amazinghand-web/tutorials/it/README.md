@@ -186,22 +186,23 @@ Fonte: `DEFAULT_HAND_SERVOS` in `AmazingHandControl/hand_logic.py` e
 | Indice | 1, 2 | 15, 16 |
 | Pollice | 7, 8 | 17, 18 |
 
-### I due servo di un dito svolgono compiti diversi ⚠️
+### Entrambi i servo muovono il dito insieme ⚠️
 
 ```
-servo1 (ID dispari) = asse di flessione      aperto ↔ chiuso
-servo2 (ID pari)    = asse di divaricazione  dita unite ↔ separate
+rotazione nello stesso verso = divaricazione
+rotazione in versi opposti   = flessione
 ```
 
-L'interfaccia mostra esattamente questi due assi. **«Il dito non si divarica / non si chiude» significa che l'asse di divaricazione (splay) non si sta muovendo** —
-una V a forbice deriva da uno splay dell'indice `+17` e uno splay del medio `−30` (uno positivo, uno negativo).
+I due servo sono montati affiancati con assi collineari e muovono il dito insieme. **«Il dito non si divarica / non si chiude» significa che il valore di controllo della divaricazione è zero o che i due servo non formano un differenziale** — una V a forbice deriva dalla divaricazione dell'indice `+17` e del medio `−30` (uno positivo, uno negativo).
 
-Sul bus vengono combinati:
+L'interfaccia mostra due assi di controllo, non due servo. Sul bus vengono combinati:
 
 ```
 servo1 = flessione + divaricazione
 servo2 = flessione − divaricazione
 ```
+
+Sono angoli software; l'ID pari è invertito per il montaggio, quindi non confrontarli direttamente con le direzioni fisiche di rotazione.
 
 Intervallo (derivato dalle 19 pose ufficiali più la posizione centrale):
 
@@ -363,9 +364,8 @@ side = side_measured × (1 − curl)
 «divaricazione» misurata scatta all'improvviso verso l'estremo opposto.
 
 Senza l'attenuazione, quello scatto passa attraverso `servo2 = flessione − divaricazione` e trascina il **servo con ID pari**
-in inversione. (L'ID dispari riceve `flessione + divaricazione`, quindi si muove nello stesso verso, solo più velocemente — non si nota.)
-Il sintomo è «a metà strada verso il pugno, i servo 12 e 16 si invertono all'improvviso» — il 12 è il servo di
-divaricazione dell'anulare sinistro e il 16 quello dell'indice sinistro, esattamente i due con target di divaricazione non nulli.
+in inversione. (L'ID dispari riceve `flessione + divaricazione`, quindi la sua variazione va nel verso opposto e si nota meno.)
+Il sintomo è «a metà pugno, i servo 12 e 16 si invertono improvvisamente» — 12 è il secondo servo dell'anulare sinistro e 16 quello dell'indice sinistro, proprio i due con componente di divaricazione diversa da zero.
 
 Con l'attenuazione, la divaricazione è **esattamente 0** a curvatura completa, per quanto selvaggia diventi la misura.
 E poi un pugno dovrebbe comunque avere le dita unite.
@@ -478,6 +478,6 @@ Per calibrare sul tuo assemblaggio, modifica `middle.positions` in `config.json`
 2. **Una direzione invertita significa che quella posa è stata acquisita al contrario** — basta riacquisire quel singolo pulsante, nessuna modifica al codice
 3. **Il pollice non deve divaricarsi** — si flette soltanto, vedi la sezione 3 qui sopra
 
-**Un servo si inverte di colpo a metà strada verso il pugno** → quel servo dovrebbe avere un **ID pari** (l'asse di divaricazione, ad es. sinistra 12 / 16).
+**Un servo si inverte di colpo a metà strada verso il pugno** → è il secondo servo (ID pari) della coppia; è invertito per il montaggio e riceve il valore `base − side`. Controlla se il valore di divaricazione è troppo grande o se il segno è sbagliato.
 Normalmente la divaricazione si annulla con la curvatura e non salta mai; se vedi questo comportamento, la riga `side *= (1 - curl)` in
 `tracking.js` non sta avendo effetto, oppure `curl` non viene calcolato.

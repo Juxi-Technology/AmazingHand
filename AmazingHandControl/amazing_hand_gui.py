@@ -18,7 +18,8 @@ AmazingHand GUI - Interactive Control Interface for Robotic Hand
 OVERVIEW:
 =========
 This GUI provides comprehensive control for an 8-servo robotic hand with 4 fingers.
-Each finger has 2 servos: one for open/close movement and one for side-to-side offset.
+Each finger has 2 side-by-side servos with collinear axes; both drive the finger
+differentially: same-direction rotation = side splay, opposite = open/close.
 
 ARCHITECTURE:
 =============
@@ -45,7 +46,7 @@ KEY COMPONENTS:
 3. Data Format (YAML):
    poses:
      pose_name:
-       positions: [pos1, pos2, ..., pos8]  # Degrees for each servo
+       positions: [pos1, pos2, ..., pos8]  # Two pose values per finger
    sequences:
      sequence_name:
        steps:
@@ -54,14 +55,10 @@ KEY COMPONENTS:
 
 SERVO MAPPING:
 ==============
-Servo 1: Pointer finger position (0=open, 110=closed)
-Servo 2: Pointer finger side (-35=left, 0=center, +35=right)
-Servo 3: Middle finger position
-Servo 4: Middle finger side
-Servo 5: Ring finger position  
-Servo 6: Ring finger side
-Servo 7: Thumb position
-Servo 8: Thumb side
+Pose array order: [ring, middle, pointer, thumb], two values per finger.
+Both values of a finger are mixed into that finger's two servos (differential drive):
+same-direction rotation = side splay, opposite-direction = open/close.
+Software values: servo1 = flex + side, servo2 = flex - side.
 
 Note: Even-numbered servos (2,4,6,8) have inverted angles in code
 
@@ -208,9 +205,10 @@ def attach_tooltip(widget, text):
 class FingerControl:
     """Control widget for a single finger (2 servos).
     
-    Each finger consists of two servos:
-    - servo1 (odd ID): Controls close/open position (0-110°)
-    - servo2 (even ID): Controls side-to-side offset (-20 to +20°)
+    Each finger has two side-by-side servos with collinear axes. The two
+    sliders are control axes, not individual servos: the program combines
+    close/open and left/right into both servo targets (differential drive).
+    Same-direction rotation = side splay; opposite = close/open.
     
     Features:
     - Vertical slider for close/open (inverted: top=closed, bottom=open)
@@ -223,8 +221,8 @@ class FingerControl:
     Args:
         parent: Tkinter parent widget
         finger_name (str): Display name (e.g., "Pointer", "Thumb")
-        servo1_id (int): Odd servo ID for position (1, 3, 5, 7)
-        servo2_id (int): Even servo ID for side (2, 4, 6, 8)
+        servo1_id (int): First (odd) servo ID of the pair (1, 3, 5, 7)
+        servo2_id (int): Second (even) servo ID of the pair (2, 4, 6, 8)
         controller: Scs0009PyController instance
         update_callback: Function to call when positions change
     

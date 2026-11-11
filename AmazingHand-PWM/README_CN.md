@@ -4,6 +4,8 @@
 
 > 这是与官方 **SCS0009 总线舵机版**并列的另一条产品线。两者的机械手相同，但舵机、驱动板、通信协议完全不同。
 
+> **完整用户教程**已集中到仓库总教程：[PWM 快速上手](../tutorials/zh-hans/02-quick-start/pwm.md) · [PWM 网页控制](../tutorials/zh-hans/03-web-control/pwm.md) · [PWM 桌面上位机](../tutorials/zh-hans/04-desktop/pwm.md) · [PWM 协议与标定](../tutorials/zh-hans/06-servo-tuning/pwm.md)。
+
 ## 硬件
 
 | 项目 | 型号 |
@@ -33,7 +35,7 @@ PWM 通道与 GPIO：
 | [`tools/hand_gui.py`](tools/hand_gui.py) | Tkinter 图形界面上位机：手势按钮、差动滑块、摄像头追踪 |
 | [`tools/hand_tracking.py`](tools/hand_tracking.py) | MediaPipe 手势追踪模块（供 GUI 调用） |
 | [`tools/serial_test.py`](tools/serial_test.py) | 命令行 / REPL 测试工具 |
-| [`docs/zh-hans/`](docs/zh-hans/) | 完整中文文档：用户手册、全流程教程、手势追踪教程、GUI 教程 |
+| [`docs/zh-hans/`](docs/zh-hans/) | 已迁移到中央教程；本目录仅保留跳转页 |
 | [`docs/en/`](docs/en/) | 完整英文翻译 |
 | `docs/<lang>/README.md` | 其他语言的快速上手页 |
 
@@ -79,7 +81,7 @@ python tools/hand_gui.py
 - 静态页：从仓库根目录启动 `python -m http.server 8099`，打开 <http://localhost:8099/Amazinghand-web-io/>，驱动选择 **PWM（ESP32-S3）**；
 - Python 服务端：`python Amazinghand-web/server.py --driver pwm`。
 
-详见 [`Amazinghand-web/README.md`](../Amazinghand-web/README.md) 和 11 种语言教程。
+详见 [PWM 网页控制](../tutorials/zh-hans/03-web-control/pwm.md) 和 [网页控制总览](../tutorials/zh-hans/03-web-control/README.md)。
 
 ## 串口协议速览
 
@@ -89,7 +91,7 @@ python tools/hand_gui.py
 - 状态码：`0x00` OK、`0x01` 无效命令、`0x02` 参数错误、`0x03` 忙、`0x10` 完成
 - 常用命令：`0xF0` 直驱（8 字节 0–180°）、`0xF1` 选左右手、`0xFF` 停止、`0x00` NOP
 
-完整命令表、手势参数与接线说明见 [`docs/zh-hans/用户手册.md`](docs/zh-hans/用户手册.md)。
+完整命令表、手势参数与接线说明见 [PWM 协议、命令与标定](../tutorials/zh-hans/06-servo-tuning/pwm.md)。
 
 ## 许可与来源
 

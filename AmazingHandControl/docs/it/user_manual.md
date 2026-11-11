@@ -67,7 +67,7 @@ Il controller GUI AmazingHand offre monitoraggio in tempo reale e controllo manu
 
 ### 4.1 Pannello di controllo delle dita (colonna sinistra)
 
-Ogni widget del dito controlla una coppia di servo (posizione + scostamento laterale):
+Ogni widget del dito espone due assi di controllo (apertura/chiusura + scostamento laterale) che vengono miscelati su entrambi i servo; la coppia è azionata in modo differenziale (stesso verso = divaricazione, versi opposti = apertura/chiusura):
 
 - **Interruttore di modalità:** passa tra **Auto** (slider base + scostamento) e **Raw** (obiettivi di servo diretti).
 - **LED di stato:** grigio (inattivo), verde (in movimento), rosso (blocco potenziale, in base al carico rispetto all'obiettivo).

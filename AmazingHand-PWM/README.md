@@ -4,6 +4,8 @@ Drive the AmazingHand dexterous hand with an **ESP32-S3 and eight PWM servos**. 
 
 > This is a separate product line alongside the official **SCS0009 serial-bus servo** version. The mechanical hand is the same; the servos, driver board and protocol are different.
 
+> **Complete user tutorials** are centralized in the repository tutorial tree: [PWM quick start](../tutorials/zh-hans/02-quick-start/pwm.md) · [PWM web control](../tutorials/zh-hans/03-web-control/pwm.md) · [PWM desktop](../tutorials/zh-hans/04-desktop/pwm.md) · [PWM protocol and tuning](../tutorials/zh-hans/06-servo-tuning/pwm.md).
+
 ## Hardware
 
 | Item | Model |
@@ -33,7 +35,7 @@ PWM channels and GPIOs:
 | [`tools/hand_gui.py`](tools/hand_gui.py) | Tkinter GUI: gesture buttons, differential sliders, camera tracking |
 | [`tools/hand_tracking.py`](tools/hand_tracking.py) | MediaPipe hand-tracking module used by the GUI |
 | [`tools/serial_test.py`](tools/serial_test.py) | Command-line / REPL test tool |
-| [`docs/zh-hans/`](docs/zh-hans/) | Complete Chinese manuals: user manual, workflow, tracking, GUI |
+| [`docs/zh-hans/`](docs/zh-hans/) | Migrated to the central tutorials; this folder keeps redirect stubs |
 | [`docs/en/`](docs/en/) | Complete English translations |
 | `docs/<lang>/README.md` | Quick-start pages in other languages |
 
@@ -79,7 +81,7 @@ The web app supports both SCS0009 and PWM drivers:
 - Static page: from the repository root run `python -m http.server 8099`, open <http://localhost:8099/Amazinghand-web-io/> and select **PWM (ESP32-S3)**.
 - Python server: `python Amazinghand-web/server.py --driver pwm`.
 
-See [`Amazinghand-web/README.md`](../Amazinghand-web/README.md) and the 11-language tutorials.
+See [PWM web control](../tutorials/zh-hans/03-web-control/pwm.md) and [web control overview](../tutorials/zh-hans/03-web-control/README.md).
 
 ## Protocol at a glance
 
@@ -89,7 +91,7 @@ See [`Amazinghand-web/README.md`](../Amazinghand-web/README.md) and the 11-langu
 - Statuses: `0x00` OK, `0x01` invalid command, `0x02` invalid parameter, `0x03` busy, `0x10` completed
 - Key commands: `0xF0` direct drive (8 angle bytes, 0–180°), `0xF1` select left/right hand, `0xFF` stop, `0x00` NOP
 
-See [`docs/en/user_manual.md`](docs/en/user_manual.md) for the full command table, gesture parameters and wiring details.
+See [PWM protocol and tuning](../tutorials/zh-hans/06-servo-tuning/pwm.md); the full English manual remains at [`docs/en/user_manual.md`](docs/en/user_manual.md).
 
 ## License and attribution
 

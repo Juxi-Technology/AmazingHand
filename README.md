@@ -12,16 +12,18 @@ This repository gathers the original mechanical design and firmware from the [Po
 
 | Folder | Description | README |
 |--------|-------------|--------|
-| **`AmazingHand-main/`** | Original design: STL/STEP CAD files, Arduino & Python examples, demos (control, simulation, hand tracking), assembly and 3D-printing guides, BOM | [English](AmazingHand-main/README.md) · [中文](AmazingHand-main/README_CN.md) |
+| **`tutorials/`** | **Central user tutorials**: organized by usage method (quick start, web control, desktop, hand tracking, servo tuning, Arduino, FAQ), with separate SCS0009 and PWM pages; all 11 languages available, with shared image assets | [简体中文](tutorials/zh-hans/README.md) · [English](tutorials/en/README.md) |
+| **`AmazingHand-main/`** | Original design: STL/STEP CAD files, Arduino & Python examples, demos (control, simulation, hand tracking), assembly and 3D-printing guides | [English](AmazingHand-main/README.md) · [中文](AmazingHand-main/README_CN.md) |
 | **`AmazingHandControl/`** | Python control tools: Tkinter GUI and CLI for calibration, pose presets, sequences and live servo control | [English](AmazingHandControl/README.md) · [中文](AmazingHandControl/README_CN.md) |
 | **`SCS0009_ServoController/`** | SCS0009 servo debug tool: PySide6 GUI to scan the bus, read and write all 44 registers, change baud rate, factory reset, and back up parameters as `.xdat` | [English](SCS0009_ServoController/README.md) · [中文](SCS0009_ServoController/README_CN.md) |
-| **`Amazinghand-web/`** | Browser control: 8 servo sliders, 19 preset poses, and camera teleop with MediaPipe running entirely in the page — left or right hand, bilingual UI, tutorials in 11 languages; supports both SCS0009 bus servos and PWM servos | [English](Amazinghand-web/README.md) · [中文](Amazinghand-web/tutorials/zh-hans/README.md) |
+| **`Amazinghand-web/`** | Browser control: 8 servo sliders, 19 preset poses, and camera teleop with MediaPipe running entirely in the page — left or right hand, bilingual UI, tutorials in 11 languages; supports both SCS0009 bus servos and PWM servos | [English](Amazinghand-web/README.md) · [中文](tutorials/zh-hans/03-web-control/README.md) |
 | **`AmazingHand-PWM/`** | PWM servo edition: ESP32-S3 firmware (ESP-IDF), Tkinter GUI, MediaPipe hand tracking, serial test tool, complete Chinese/English documentation | [English](AmazingHand-PWM/README.md) · [中文](AmazingHand-PWM/README_CN.md) |
 
 ## 🚀 Getting started
 
 | What you want to do | Where to go |
 |---------------------|-------------|
+| **Read the complete user tutorials (SCS0009 / PWM)** | [`tutorials/zh-hans/`](tutorials/zh-hans/README.md) — choose the servo version, then follow quick start / web / desktop / tracking / tuning |
 | Control the hand from a browser — sliders, preset poses, camera teleop | [`Amazinghand-web/`](Amazinghand-web/README.md) — `pip install -r requirements.txt`, then `python server.py --no-connect` and open <http://localhost:8000> |
 | Use the PWM servo edition — ESP32-S3 driving 8 PWM channels | [`AmazingHand-PWM/`](AmazingHand-PWM/README.md) — flash the firmware, then use `tools/hand_gui.py` or the web app (select the PWM driver); see the module docs |
 | Run the desktop demos — simulation, hand tracking, servo control | [`AmazingHand-main/Demo/`](AmazingHand-main/Demo/README.md) — one-click deployment scripts for [Windows](AmazingHand-main/Demo/Windows_Deploy_Scripts/), [Linux](AmazingHand-main/Demo/Linux_Deploy_Scripts/) and [macOS](AmazingHand-main/Demo/Mac_Deploy_Scripts/) |
@@ -34,7 +36,7 @@ Hardware needed: the assembled hand, an external 5 V / 2 A supply, and a USB ser
 - 8 × Feetech **SCS0009** servos (potentiometer feedback, 10-bit resolution, 0–1023)
 - External 5 V / 2 A power supply
 - Serial bus adapter, or an Arduino with a Feetech TTL Linker
-- 3D-printed parts — see the [BOM](AmazingHand-main/README.md#bom-bill-of-materials)
+- 3D-printed parts — see the [3D printing tips](AmazingHand-main/docs/AmazingHand_3DprintingTips.pdf)
 
 **PWM servo edition** (see [`AmazingHand-PWM/`](AmazingHand-PWM/README.md)):
 
@@ -49,7 +51,6 @@ Each finger is driven by a parallel mechanism: two servos move it in flexion/ext
 - [Assembly guide](AmazingHand-main/docs/AmazingHand_Assembly.pdf)
 - [3D printing tips](AmazingHand-main/docs/AmazingHand_3DprintingTips.pdf)
 - [AmazingHand overview](AmazingHand-main/docs/AmazingHand_Overview.pdf)
-- [Chinese BOM](https://docs.google.com/spreadsheets/d/1fHZiTky79vyZwICj5UGP2c_RiuLLm89K8HrB3vpb2h4/edit?gid=837395814#gid=837395814)
 
 ## 📄 License & attribution
 

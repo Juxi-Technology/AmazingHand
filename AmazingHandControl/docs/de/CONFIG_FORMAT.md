@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### Positions-Array
 - **8 Werte**, die Servopositionen in Grad darstellen
-- **Servo-Zuordnung**:
-  - Servo 1: Position des Zeigefingers (0=offen, 110=geschlossen)
-  - Servo 2: Seite des Zeigefingers (-20=links, 0=Mitte, +20=rechts)
-  - Servo 3: Position des Mittelfingers
-  - Servo 4: Seite des Mittelfingers
-  - Servo 5: Position des Ringfingers
-  - Servo 6: Seite des Ringfingers
-  - Servo 7: Position des Daumens
-  - Servo 8: Seite des Daumens
+- **Array-Reihenfolge**: 8 Werte, zwei pro Finger, in der Reihenfolge **Ringfinger, Mittelfinger, Zeigefinger, Daumen**. Beide Werte eines Fingers werden auf seine beiden Servos gemischt; sie sind keine getrennten Flexions-/Spreizservos. Softwarewerte: `servo1 = Flexion + Spreizung`, `servo2 = Flexion − Spreizung`; Servos mit gerader ID sind in der Hardware invertiert.
 
 - **Bereich des Schließen/Öffnen-Schiebereglers**: 0-110° pro Finger (0=offen, 110=geschlossen)
 - **Bereich des Seiten-Schiebereglers**: -40° (links) bis +40° (rechts)

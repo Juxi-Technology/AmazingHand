@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### 位置配列
 - **8 個の値**で、サーボ位置を度数で表します
-- **サーボ対応**：
-  - サーボ 1：人差し指の位置（0=開く、110=閉じる）
-  - サーボ 2：人差し指の左右（-20=左、0=中央、+20=右）
-  - サーボ 3：中指の位置
-  - サーボ 4：中指の左右
-  - サーボ 5：薬指の位置
-  - サーボ 6：薬指の左右
-  - サーボ 7：親指の位置
-  - サーボ 8：親指の左右
+- **配列の順序**：8 個の値、指ごとに 2 個、順序は **薬指、中指、人差し指、親指**。1 本の指の 2 つの値は、その指の 2 つのサーボに合成されます。「屈伸用サーボ／開き用サーボ」に分かれているわけではありません。ソフトウェア値：`servo1 = 屈伸 + 開き`、`servo2 = 屈伸 − 開き`。偶数 ID のサーボはハードウェア上で反転しています。
 
 - **開閉スライダー範囲**：指ごとに 0-110°（0=開く、110=閉じる）
 - **左右スライダー範囲**：-40°（左）〜+40°（右）

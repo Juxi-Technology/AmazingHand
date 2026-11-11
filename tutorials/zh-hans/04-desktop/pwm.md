@@ -1,0 +1,177 @@
+---
+title: "PWM 桌面上位机（Tkinter GUI）"
+description: "AmazingHand PWM 舵机版桌面控制：源码运行、GUI 手势/差动/直驱、内置 MediaPipe 追踪、命令行测试与打包。"
+version: pwm
+---
+
+# PWM 桌面上位机（Tkinter GUI）
+
+> 以下命令在仓库的 `AmazingHand-PWM/` 目录下执行。
+
+本页是 **PWM 舵机版**的桌面控制教程。网页控制见 [PWM 网页控制](../03-web-control/pwm.md)，接线见 [PWM 接线](../01-hardware/pwm.md)，固件烧录见 [PWM 快速上手](../02-quick-start/pwm.md)。
+
+> 适用：ESP32-S3 + 8 路 PWM 舵机（差动驱动）。固件烧录见 [PWM 快速上手](../02-quick-start/pwm.md)，协议与命令见 [PWM 协议与标定](../06-servo-tuning/pwm.md)。
+
+## 一、运行方式
+
+| 方式 | 需要 | 适合 |
+|------|------|------|
+| **源码运行**（推荐） | 64 位 Python 3.12 + pyserial | 全部功能，含手势追踪 |
+| 自行打包 exe | PyInstaller | 免装 Python 分发（见第七节） |
+
+## 二、源码运行
+
+### 安装依赖
+
+在模块根目录（`AmazingHand-PWM/`）执行：
+
+```bash
+# 基础依赖（pyserial）
+pip install -r tools/requirements.txt
+
+# 需要手势追踪时再运行（自动创建 tools/tracking_env 并安装 mediapipe）
+tools/setup_tracking.bat
+```
+
+> mediapipe 0.10.14 只提供 64 位 Windows wheel，必须使用 **64 位 Python 3.12**。
+
+### 启动 GUI
+
+```bash
+# 任意带 pyserial 的 Python
+python tools/hand_gui.py
+
+# 或使用追踪环境（含 mediapipe）
+tools/tracking_env/Scripts/python tools/hand_gui.py
+```
+
+![上位机主界面：串口栏、手势命令、舵机直驱与手指差动控制](../../assets/robot-arms/amazing-hand/pwm-debugging/gui-main.png)
+
+### GUI 使用
+
+1. **选串口**：顶部下拉框选 ESP32 的 COM 口（设备管理器查看）。
+2. **点「连接」**：状态灯变绿，日志显示“已连接”，自动发 NOP 链路测试。
+3. **手势命令**：点「石头 / 剪刀 / 布 / 真棒 / OK / 捏合 / 指向 / 张开 / 握拳」，灵巧手执行。
+4. **左右手**：勾选「右手」/「左手」切换（拇指镜像方向不同）。
+5. **舵机直驱**：拖 8 个滑块，实时控制单个舵机角度（0–180°）。
+6. **手指差动控制**：每根手指两个进度条——
+   - **弯曲◀▶伸直**：手指弯曲或伸直（范围 -70 ~ +70）。
+   - **右摆◀▶左摆**：手指左右摆动（范围 60 ~ 120，90=中立）。
+
+   > 这两个进度条是**控制轴**，不是两个舵机。程序会把它们合成为该指两个舵机的角度：同向分量产生侧摆，反向分量产生屈伸。
+
+7. **重复 / 停止**：重复上一次手势 / 立即中断。
+8. **通信日志**：底部实时显示收发帧和响应。
+
+![手指差动控制面板：每根手指的弯曲/伸直与左右摆动](../../assets/robot-arms/amazing-hand/pwm-debugging/gui-differential.png)
+
+### GUI 内置手势追踪
+
+GUI 自带手势追踪面板（摄像头跟随手部动作）：
+
+1. 连接串口后，滚动到「手势追踪 (MediaPipe 摄像头)」面板。
+2. 选摄像头号（默认 0），点**「开始追踪」**。
+3. 把手放进摄像头画面，灵巧手跟随弯曲/伸直。
+
+> 追踪需要 `tools/setup_tracking.bat` 装好 mediapipe；用源码方式启动的 GUI 才有追踪功能。
+
+## 三、命令行测试（tools/serial_test.py）
+
+在模块根目录执行：
+
+```bash
+# 链路测试（先确认能通）
+python tools/serial_test.py COM3 nop
+
+# 手势
+python tools/serial_test.py COM3 rock         # 石头
+python tools/serial_test.py COM3 thumbs_up    # 真棒
+python tools/serial_test.py COM3 index        # 指向
+python tools/serial_test.py COM3 open         # 张开
+python tools/serial_test.py COM3 close        # 握拳
+
+# 单舵机直驱
+python tools/serial_test.py COM3 servo 1 90   # 舵机1 → 90°
+
+# 全部归中
+python tools/serial_test.py COM3 mid
+
+# 设左右手
+python tools/serial_test.py COM3 hand L
+python tools/serial_test.py COM3 hand R
+
+# 扫频/自检
+python tools/serial_test.py COM3 sweep 1      # 舵机1 扫频
+python tools/serial_test.py COM3 test         # 全部舵机逐个测试
+```
+
+## 四、串口工具手动测试（可选）
+
+不用上位机，直接用串口工具发十六进制帧也能验证链路。
+
+**CoolTerm**（Windows / macOS / Linux）：
+
+1. `Options` → 波特率 **115200**、8N1。
+2. `Connection` → `Send String` → 选择 `Hex`。
+3. 发送 `AA 01 00 01`（石头），响应区应出现 `BB 01 00 01`（ACK）和 `BB 01 10 11`（完成）。
+
+**Linux / macOS 命令行**：
+
+```bash
+# Linux
+stty -F /dev/ttyUSB0 115200
+printf '\xAA\x01\x00\x01' > /dev/ttyUSB0
+
+# macOS
+stty -f /dev/cu.usbserial-0001 115200
+printf '\xAA\x01\x00\x01' > /dev/cu.usbserial-0001
+```
+
+帧格式、校验和与全部命令见 [PWM 协议与标定](../06-servo-tuning/pwm.md)。
+
+## 五、Python 控制脚本（自定义开发）
+
+```python
+import time
+import serial
+
+PORT, BAUD = "COM3", 115200          # Linux/macOS 换成 /dev/ttyUSB0、/dev/cu.usbserial-*
+
+def frame(cmd, data=b""):
+    checksum = cmd ^ len(data)
+    for byte in data:
+        checksum ^= byte
+    return bytes([0xAA, cmd, len(data)]) + data + bytes([checksum & 0xFF])
+
+ser = serial.Serial(PORT, BAUD, timeout=1)
+time.sleep(1)                        # 等待 ESP32 复位完成
+
+ser.write(frame(0x00))               # NOP 链路测试
+ser.write(frame(0x01))               # 石头
+time.sleep(0.5)
+ser.write(frame(0xF0, bytes([90] * 8)))  # 8 路舵机全部 90°
+ser.close()
+```
+
+响应帧为 `BB CMD STATUS CKSUM`，`STATUS=0x00` 表示已接受、`0x10` 表示手势完成。完整命令表和直驱/左右手示例见 [PWM 协议与标定](../06-servo-tuning/pwm.md)。
+
+## 六、常见问题
+
+| 现象 | 处理 |
+|------|------|
+| 舵机不动 | 检查供电（5V 3A 独立电源）、COM 口、接线 |
+| 无响应 / 打开串口后舵机乱动 | 确认波特率 115200；GUI 连接时会先发 NOP 握手 |
+| 摄像头没画面 | 允许摄像头权限（设置→隐私→相机） |
+| 手型反了 | 勾选相反的左右手 |
+| 追踪没反应 | 确认用 `tools\tracking_env` 的 Python 启动，且 mediapipe 安装成功 |
+
+## 七、自行打包 exe（可选）
+
+```bash
+pip install pyinstaller
+python -m PyInstaller --onefile --noconsole --name "AmazingHand控制台" tools/hand_gui.py
+```
+
+打包版不包含手势追踪（mediapipe 资源较大）；需要追踪时请用源码方式。
+
+> 完整协议与命令说明见 [PWM 协议与标定](../06-servo-tuning/pwm.md)。

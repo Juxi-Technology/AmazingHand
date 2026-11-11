@@ -39,7 +39,7 @@ Amazing Hand 的特点：
 
 ![Hand Overview](assets/Hand_Overview.jpg)
 每根手指由一个并联机构驱动。
-也就是说，每根手指使用 2 个小型 Feetech SCS0009 舵机，分别实现屈伸（flexion/extension）与收展（abduction/adduction）
+也就是说，每根手指使用 2 个小型 Feetech SCS0009 舵机，通过差动共同实现屈伸（flexion/extension）与收展（abduction/adduction）
 
 ![Finger Overview](assets/Finger_Overview.jpg)
 

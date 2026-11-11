@@ -67,7 +67,7 @@ La GUI del AmazingHand Controller ofrece monitorización en tiempo real y contro
 
 ### 4.1 Panel de control de dedos (columna izquierda)
 
-Cada widget de dedo controla un par de servos (posición + desplazamiento lateral):
+Cada widget de dedo expone dos ejes de control (abrir/cerrar + desplazamiento lateral) que se mezclan en ambos servos; el par se acciona de forma diferencial (mismo sentido = abducción, sentidos opuestos = abrir/cerrar):
 
 - **Conmutador de modo:** alterna entre **Auto** (deslizadores base + desplazamiento) y **Raw** (objetivos de servo directos).
 - **LED de estado:** gris (inactivo), verde (en movimiento), rojo (bloqueo potencial, según carga vs. objetivo).

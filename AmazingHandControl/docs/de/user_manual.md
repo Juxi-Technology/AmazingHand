@@ -67,7 +67,7 @@ Die GUI des AmazingHand Controller bietet Echtzeitüberwachung und manuelle Steu
 
 ### 4.1 Fingersteuerungs-Panel (linke Spalte)
 
-Jedes Finger-Widget steuert ein Paar Servos (Position + Seitenversatz):
+Jedes Finger-Widget steuert zwei Steuerachsen (Öffnen/Schließen + Seitenversatz), die auf beide Servos gemischt werden; das Paar wird differenziell angetrieben (gleiche Richtung = Spreizung, Gegenrichtung = Öffnen/Schließen):
 
 - **Modusumschalter:** Umschalten zwischen **Auto** (base + Offset-Schieberegler) und **Raw** (direkte Servo-Ziele).
 - **Status-LED:** grau (untätig), grün (in Bewegung), rot (mögliche Blockierung, basierend auf Last vs. Ziel).

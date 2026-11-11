@@ -27,12 +27,13 @@ serial:
   baudrate_options: [9600, 115200, 1000000]  # Shown in GUI dropdown
 
 # Servo assignments — [servo1_id, servo2_id] per finger
-# servo1 (odd ID)  = position axis (open/close)
-# servo2 (even ID) = side axis (left/right)
+# Both servos drive the finger differentially: same direction = side splay,
+# opposite direction = flexion/extension.
+# servo1 = flex + side; servo2 = flex - side (signs account for mounting).
 servos:
-  ring:    [1, 2]
+  ring:    [5, 6]
   middle:  [3, 4]
-  pointer: [5, 6]
+  pointer: [1, 2]
   thumb:   [7, 8]
   all_ids: [1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -104,15 +105,7 @@ poses:
 
 ### 위치 배열
 - **8개 값**으로 서보 위치를 도(degree) 단위로 나타냅니다
-- **서보 매핑**:
-  - 서보 1: 검지 위치(0=열림, 110=닫힘)
-  - 서보 2: 검지 측방(-20=왼쪽, 0=중앙, +20=오른쪽)
-  - 서보 3: 중지 위치
-  - 서보 4: 중지 측방
-  - 서보 5: 약지 위치
-  - 서보 6: 약지 측방
-  - 서보 7: 엄지 위치
-  - 서보 8: 엄지 측방
+- **배열 순서**: 8개 값, 손가락당 2개, 순서는 **약지, 중지, 검지, 엄지**. 한 손가락의 두 값은 그 손가락의 두 서보에 합성됩니다. '굴곡용 서보/벌림용 서보'로 나뉘지 않습니다. 소프트웨어 값: `servo1 = 굴곡 + 벌림`, `servo2 = 굴곡 − 벌림`; 짝수 ID 서보는 하드웨어에서 반전됩니다.
 
 - **닫기/열기 슬라이더 범위**: 손가락당 0-110°(0=열림, 110=닫힘)
 - **측방 슬라이더 범위**: -40°(왼쪽) ~ +40°(오른쪽)

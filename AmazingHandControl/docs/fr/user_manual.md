@@ -67,7 +67,7 @@ L'interface graphique AmazingHand Controller assure le suivi en temps réel et l
 
 ### 4.1 Panneau de contrôle des doigts (colonne de gauche)
 
-Chaque widget de doigt contrôle une paire de servos (position + décalage latéral) :
+Chaque widget de doigt expose deux axes de commande (ouverture/fermeture + décalage latéral) mélangés dans les deux servos ; la paire est entraînée en différentiel (même sens = écartement, sens opposés = ouverture/fermeture) :
 
 - **Bascule de mode :** permet de passer entre **Auto** (curseurs base + décalage) et **Raw** (cibles de servo directes).
 - **LED d'état :** gris (inactif), vert (en mouvement), rouge (blocage potentiel, selon la charge par rapport à la cible).

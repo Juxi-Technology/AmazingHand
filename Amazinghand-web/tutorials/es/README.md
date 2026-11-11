@@ -186,22 +186,23 @@ Fuente: `DEFAULT_HAND_SERVOS` en `AmazingHandControl/hand_logic.py` y
 | Índice | 1, 2 | 15, 16 |
 | Pulgar | 7, 8 | 17, 18 |
 
-### Los dos servos de un dedo hacen trabajos distintos ⚠️
+### Ambos servos mueven el dedo conjuntamente ⚠️
 
 ```
-servo1 (ID impar)  = eje de flexión   abierto ↔ cerrado
-servo2 (ID par)    = eje de splay     dedos juntos ↔ separados
+giro en el mismo sentido   = abducción
+giro en sentidos opuestos  = flexión
 ```
 
-La interfaz muestra exactamente estos dos ejes. **«El dedo no se abre / no se cierra» significa que el eje de splay no se mueve** —
-una V tipo tijera sale de un splay del índice de `+17` y un splay del medio de `−30` (uno positivo, uno negativo).
+Los dos servos van montados uno al lado del otro con ejes colineales y mueven el dedo conjuntamente. **«El dedo no se abre / no se cierra» significa que el valor de control de abducción es cero o que los dos servos no forman un diferencial** — una V tipo tijera sale de una abducción del índice de `+17` y una del medio de `−30` (uno positivo, uno negativo).
 
-Se combinan en el bus:
+La interfaz muestra dos ejes de control, no dos servos. En el bus se combinan:
 
 ```
 servo1 = flexión + splay
 servo2 = flexión − splay
 ```
+
+Son ángulos de software; el ID par se invierte por el montaje, así que no los compares directamente con las direcciones físicas de giro.
 
 Rango (derivado de las 19 poses oficiales más el centro):
 
@@ -362,9 +363,8 @@ side = side_measured × (1 − curl)
 "separado" medido salta de golpe al otro extremo.
 
 Sin el desvanecimiento, ese salto viaja a través de `servo2 = flexion − splay` y arrastra el **servo de ID par**
-hacia atrás. (El ID impar recibe `flexion + splay`, así que se mueve igual, solo que más rápido — no se nota.)
-El síntoma es "a medio camino del puño, los servos 12 y 16 se invierten de repente" — el 12 es el servo de
-splay del anular izquierdo y el 16 el del índice izquierdo, precisamente los dos cuyos objetivos de splay no son cero.
+hacia atrás. (El ID impar recibe `flexión + splay`, así que su cambio va en sentido contrario y se nota menos.)
+El síntoma es «a medio puño, los servos 12 y 16 se invierten de repente» — 12 es el segundo servo del anular izquierdo y 16 el del índice izquierdo, precisamente los dos cuyo componente de abducción no es cero.
 
 Con el desvanecimiento, el splay es **exactamente 0** a curvatura completa por muy loca que se vuelva la medición.
 Y un puño debería ser con los dedos juntos de todas formas.
@@ -476,6 +476,6 @@ Para calibrar contra tu propio montaje, edita `middle.positions` en `config.json
 2. **Una dirección invertida significa que esa pose se capturó al revés** — solo vuelve a capturar ese botón, sin tocar el código
 3. **El pulgar no debería hacer splay** — solo flexiona, ver la sección 3 de arriba
 
-**Un servo se invierte de golpe a medio puño** → ese servo debería tener un **ID par** (el eje de splay, p. ej. mano izquierda 12 / 16).
+**Un servo se invierte de golpe a medio puño** → es el segundo servo (ID par) del par; está invertido por el montaje y recibe el valor `base − side`. Comprueba si el valor de abducción es demasiado grande o su signo es incorrecto.
 Normalmente el splay se desvanece a 0 con la curvatura y nunca salta; si ves esto, la línea `side *= (1 - curl)` de
 `tracking.js` no está surtiendo efecto, o `curl` no se está calculando.

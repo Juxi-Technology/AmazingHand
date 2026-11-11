@@ -17,7 +17,9 @@ hand: right
 # Servo configuration — right hand.
 servos:
   # Finger assignments: [servo1_id, servo2_id]
-  # servo1 = position (odd ID), servo2 = side offset (even ID)
+  # Both servos drive the finger differentially: same direction = side splay,
+  # opposite direction = flexion/extension.
+  # servo1 = flex + side; servo2 = flex - side (signs account for mounting).
   pointer: [1, 2]
   middle: [3, 4]
   ring: [5, 6]

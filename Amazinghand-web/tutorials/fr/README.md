@@ -186,22 +186,23 @@ Source : `DEFAULT_HAND_SERVOS` dans `AmazingHandControl/hand_logic.py` et
 | Index | 1, 2 | 15, 16 |
 | Pouce | 7, 8 | 17, 18 |
 
-### Les deux servos d'un doigt ont des rôles distincts ⚠️
+### Les deux servos entraînent le doigt ensemble ⚠️
 
 ```
-servo1 (ID impair) = axe de flexion    ouvert ↔ fermé
-servo2 (ID pair)   = axe d'écartement  doigts serrés ↔ doigts écartés
+rotation dans le même sens   = écartement
+rotation en sens opposés     = flexion
 ```
 
-L'interface affiche exactement ces deux axes. **« Le doigt ne s'écarte pas / ne se referme pas » signifie que l'axe d'écartement ne bouge pas** —
-un V en ciseau vient de l'écartement de l'index `+17` et de celui du majeur `−30` (un positif, un négatif).
+Les deux servos sont montés côte à côte, axes colinéaires, et entraînent le doigt ensemble. **« Le doigt ne s'écarte pas / ne se referme pas » signifie que la valeur de commande d'écartement est nulle ou que les deux servos ne forment pas un différentiel** — un V en ciseau vient de l'écartement de l'index `+17` et de celui du majeur `−30` (un positif, un négatif).
 
-Ils sont combinés sur le bus :
+L'interface affiche deux axes de commande, pas deux servos. Ils sont combinés sur le bus :
 
 ```
 servo1 = flexion + écartement
 servo2 = flexion − écartement
 ```
+
+Ce sont des angles logiciels ; l'ID pair est inversé selon le montage, donc ne les comparez pas directement aux directions physiques des servos.
 
 Plage (déduite des 19 poses officielles plus le milieu) :
 
@@ -362,9 +363,8 @@ side = side_measured × (1 − curl)
 mesuré bascule soudainement à l'autre extrémité.
 
 Sans cette atténuation, ce basculement se propage via `servo2 = flexion − écartement` et entraîne le **servo d'ID pair**
-en marche arrière. (L'ID impair reçoit `flexion + écartement`, il part donc dans le même sens, juste plus vite — c'est invisible.)
-Le symptôme est « à mi-chemin du poing, les servos 12 et 16 se mettent soudain à l'envers » — 12 est le servo d'écartement
-de l'annulaire gauche et 16 celui de l'index gauche, précisément les deux dont les cibles d'écartement sont non nulles.
+en marche arrière. (L'ID impair reçoit `flexion + écartement`, son changement part donc dans l'autre sens et se voit moins.)
+Le symptôme est « à mi-poings, les servos 12 et 16 s'inversent soudainement » — 12 est le second servo de l'annulaire gauche et 16 celui de l'index gauche, précisément les deux dont la composante d'écartement est non nulle.
 
 Avec l'atténuation, l'écartement est **exactement 0** au repli complet, quelle que soit la folie de la mesure.
 Et un poing, de toute façon, c'est des doigts serrés.
@@ -477,6 +477,6 @@ Pour l'étalonner sur votre propre assemblage, éditez `middle.positions` dans `
 2. **Une direction inversée signifie que cette pose a été capturée à l'envers** — recapturez simplement ce bouton, aucun changement de code
 3. **Le pouce ne doit pas s'écarter** — il ne fait que fléchir, voir la section 3 ci-dessus
 
-**Un servo bascule en marche arrière à mi-chemin du poing** → ce servo devrait avoir un **ID pair** (l'axe d'écartement, p. ex. main gauche 12 / 16).
+**Un servo bascule en marche arrière à mi-chemin du poing** → c'est le second servo (ID pair) de la paire ; il est inversé à cause du montage et reçoit la valeur `base − side`. Vérifiez si la valeur d'écartement est trop grande ou si son signe est faux.
 Normalement l'écartement s'estompe jusqu'à 0 avec le repli et ne saute jamais ; si vous constatez cela, la ligne `side *= (1 - curl)` de
 `tracking.js` ne prend pas effet, ou bien `curl` n'est pas calculé.
